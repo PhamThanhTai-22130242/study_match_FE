@@ -29,13 +29,12 @@ class WebSocketManager {
             return this.connectingPromise;
         }
 
+        const accessToken = localStorage.getItem('accessToken');
+        if (!accessToken || accessToken.split('.').length !== 3) {
+            return Promise.reject(new Error('Access token không hợp lệ'));
+        }
+
         this.connectingPromise = new Promise((resolve, reject) => {
-            const accessToken = localStorage.getItem('accessToken');
-            if (!accessToken || accessToken.split('.').length !== 3) {
-                this.connectingPromise = null;
-                reject(new Error('Access token không hợp lệ'));
-                return;
-            }
             this.client = new Client({
                 brokerURL: SOCKET_URL,
                 connectHeaders: {

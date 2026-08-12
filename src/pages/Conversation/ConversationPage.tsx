@@ -2324,213 +2324,190 @@ export default function ConversationPage() {
           />
         )}
 
-        <Box sx={{ width: "100%", bgcolor: "#fff", borderTop: "1px solid rgba(0,0,0,0.08)" }}>
-          {preview && (
-            <Box sx={{ px: 2, pt: 1.5, pb: 1, bgcolor: "#fff" }}>
-              <Box
-                sx={{
-                  position: "relative",
-                  width: selectedFile?.type.startsWith("image/") || selectedFile?.type.startsWith("video/") ? 60 : "min(320px, 100%)",
-                  height: selectedFile?.type.startsWith("image/") || selectedFile?.type.startsWith("video/") ? 60 : 56,
-                  borderRadius: 2,
-                  overflow: "hidden",
-                  bgcolor: "#f8fafc",
-                  border: "1px solid rgba(0,0,0,0.12)",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                {selectedFile?.type.startsWith("video/") ? (
-                  <Box
-                    component="video"
-                    src={preview}
-                    sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block", bgcolor: "#000" }}
-                    preload="metadata"
-                    muted
-                  />
-                ) : selectedFile?.type.startsWith("image/") ? (
-                  <Box
-                    component="img"
-                    src={preview}
-                    alt="preview"
-                    sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                  />
-                ) : selectedFile ? (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0, px: 1.25, pr: 4.5 }}>
+        {hasSelectedConversation && (
+          <Box sx={{ width: "100%", bgcolor: "#fff", borderTop: "1px solid rgba(0,0,0,0.08)" }}>
+            {preview && (
+              <Box sx={{ px: 2, pt: 1.5, pb: 1, bgcolor: "#fff" }}>
+                <Box
+                  sx={{
+                    position: "relative",
+                    width: selectedFile?.type.startsWith("image/") || selectedFile?.type.startsWith("video/") ? 60 : "min(320px, 100%)",
+                    height: selectedFile?.type.startsWith("image/") || selectedFile?.type.startsWith("video/") ? 60 : 56,
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    bgcolor: "#f8fafc",
+                    border: "1px solid rgba(0,0,0,0.12)",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  {selectedFile?.type.startsWith("video/") ? (
                     <Box
-                      sx={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 1.5,
-                        bgcolor: "#f0f7ff",
-                        color: "#2563eb",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <InsertDriveFileIcon sx={{ fontSize: 20 }} />
+                      component="video"
+                      src={preview}
+                      sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block", bgcolor: "#000" }}
+                      preload="metadata"
+                      muted
+                    />
+                  ) : selectedFile?.type.startsWith("image/") ? (
+                    <Box
+                      component="img"
+                      src={preview}
+                      alt="preview"
+                      sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                    />
+                  ) : selectedFile ? (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0, px: 1.25, pr: 4.5 }}>
+                      <Box
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 1.5,
+                          bgcolor: "#f0f7ff",
+                          color: "#2563eb",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <InsertDriveFileIcon sx={{ fontSize: 20 }} />
+                      </Box>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: "#111827" }} noWrap>
+                          {selectedFile.name}
+                        </Typography>
+                        <Typography sx={{ fontSize: 12, color: "#64748b" }}>
+                          {formatFileSize(selectedFile.size)}
+                        </Typography>
+                      </Box>
                     </Box>
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: "#111827" }} noWrap>
-                        {selectedFile.name}
-                      </Typography>
-                      <Typography sx={{ fontSize: 12, color: "#64748b" }}>
-                        {formatFileSize(selectedFile.size)}
-                      </Typography>
-                    </Box>
-                  </Box>
-                ) : null}
-                <IconButton
-                  sx={{
-                    position: "absolute",
-                    top: 6,
-                    right: 6,
-                    width: 26,
-                    height: 26,
-                    bgcolor: "rgba(0,0,0,0.55)",
-                    color: "#fff",
-                    "&:hover": { bgcolor: "rgba(0,0,0,0.75)" },
-                  }}
-                  onClick={() => {
-                    setPreview(null);
-                    setSelectedFile(null);
-                  }}
-                >
-                  <CancelPresentationIcon sx={{ fontSize: 18 }} />
-                </IconButton>
+                  ) : null}
+                  <IconButton
+                    sx={{
+                      position: "absolute",
+                      top: 6,
+                      right: 6,
+                      width: 26,
+                      height: 26,
+                      bgcolor: "rgba(0,0,0,0.55)",
+                      color: "#fff",
+                      "&:hover": { bgcolor: "rgba(0,0,0,0.75)" },
+                    }}
+                    onClick={() => {
+                      setPreview(null);
+                      setSelectedFile(null);
+                    }}
+                  >
+                    <CancelPresentationIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Box>
               </Box>
-            </Box>
-          )}
+            )}
 
-          <Box
-            sx={{
-              flexShrink: 0,
-              display: "flex",
-              alignItems: "flex-end",
-              width: "100%",
-              gap: 1.5,
-              px: 2,
-              py: 1,
-              bgcolor: "#fff",
-              zIndex: 1,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexShrink: 0, pb: 0.15 }}>
-              <IconButton
-                aria-label={isRecordingAudio ? "Dừng ghi âm và gửi" : "Ghi âm"}
-                onClick={handleAudioRecordClick}
-                sx={{
-                  color: isRecordingAudio ? "#fff" : "#2563eb",
-                  bgcolor: isRecordingAudio ? "#ef4444" : "transparent",
-                  p: 0.5,
-                  "&:hover": {
-                    bgcolor: isRecordingAudio ? "#dc2626" : "rgba(37,99,235,0.08)",
-                  },
-                }}
-              >
-                {isRecordingAudio ? <StopCircleIcon /> : <MicIcon />}
-              </IconButton>
-              {isRecordingAudio && (
-                <Typography
-                  sx={{
-                    color: "#dc2626",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    lineHeight: 1,
-                    minWidth: 36,
-                  }}
-                >
-                  {formatRecordingTime(recordingElapsedMs)}
-                </Typography>
-              )}
-            </Box>
-
-            <IconButton sx={{ color: "#2563eb", p: 0.5 }} onClick={handleOpenFile}>
-              <ImageIcon />
-            </IconButton>
-
-            <IconButton sx={{ color: "#2563eb", p: 0.5 }} onClick={handleOpenDocument}>
-              <AttachFileIcon />
-            </IconButton>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,video/*"
-              style={{ display: "none" }}
-              onChange={handleFileChange}
-            />
-
-            <input
-              ref={documentInputRef}
-              type="file"
-              style={{ display: "none" }}
-              onChange={handleDocumentChange}
-            />
-
-            <Paper
-              elevation={0}
+            <Box
               sx={{
-                flex: 1,
+                flexShrink: 0,
                 display: "flex",
                 alignItems: "flex-end",
-                minHeight: 44,
-                maxHeight: 156,
-                borderRadius: "22px",
+                width: "100%",
+                gap: 1.5,
                 px: 2,
-                py: 0.75,
-                bgcolor: "#f0f7ff",
-                overflow: "visible",
+                py: 1,
+                bgcolor: "#fff",
+                zIndex: 1,
               }}
             >
-              <InputBase
-                placeholder="Aa"
-                value={messageText}
-                multiline
-                minRows={1}
-                maxRows={5}
-                onChange={(event) => setMessageText(event.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                  }
-                }}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexShrink: 0, pb: 0.15 }}>
+                <IconButton
+                  aria-label={isRecordingAudio ? "Dừng ghi âm và gửi" : "Ghi âm"}
+                  onClick={handleAudioRecordClick}
+                  sx={{
+                    color: isRecordingAudio ? "#fff" : "#2563eb",
+                    bgcolor: isRecordingAudio ? "#ef4444" : "transparent",
+                    p: 0.5,
+                    "&:hover": {
+                      bgcolor: isRecordingAudio ? "#dc2626" : "rgba(37,99,235,0.08)",
+                    },
+                  }}
+                >
+                  {isRecordingAudio ? <StopCircleIcon /> : <MicIcon />}
+                </IconButton>
+                {isRecordingAudio && (
+                  <Typography
+                    sx={{
+                      color: "#dc2626",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      minWidth: 36,
+                    }}
+                  >
+                    {formatRecordingTime(recordingElapsedMs)}
+                  </Typography>
+                )}
+              </Box>
+
+              <IconButton sx={{ color: "#2563eb", p: 0.5 }} onClick={handleOpenFile}>
+                <ImageIcon />
+              </IconButton>
+
+              <IconButton sx={{ color: "#2563eb", p: 0.5 }} onClick={handleOpenDocument}>
+                <AttachFileIcon />
+              </IconButton>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*"
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+              />
+
+              <input
+                ref={documentInputRef}
+                type="file"
+                style={{ display: "none" }}
+                onChange={handleDocumentChange}
+              />
+
+              <Paper
+                elevation={0}
                 sx={{
                   flex: 1,
-                  fontSize: 16,
-                  color: "#111827",
-                  lineHeight: 1.45,
-                  py: 0.35,
-                  maxHeight: 132,
-                  overflowY: "auto",
-                  scrollbarWidth: "thin",
-                  scrollbarColor: "rgba(100,116,139,0.45) transparent",
-                  "&::-webkit-scrollbar": {
-                    width: 8,
-                  },
-                  "&::-webkit-scrollbar-track": {
-                    background: "transparent",
-                  },
-                  "&::-webkit-scrollbar-thumb": {
-                    backgroundColor: "rgba(100,116,139,0.38)",
-                    borderRadius: "999px",
-                    border: "2px solid transparent",
-                    backgroundClip: "content-box",
-                  },
-                  "&::-webkit-scrollbar-thumb:hover": {
-                    backgroundColor: "rgba(71,85,105,0.55)",
-                  },
-                  "&::-webkit-scrollbar-button": {
-                    display: "none",
-                    width: 0,
-                    height: 0,
-                  },
-                  "& textarea": {
-                    overflowY: "auto !important",
+                  display: "flex",
+                  alignItems: "flex-end",
+                  minHeight: 44,
+                  maxHeight: 156,
+                  borderRadius: "22px",
+                  px: 2,
+                  py: 0.75,
+                  bgcolor: "#f0f7ff",
+                  overflow: "visible",
+                }}
+              >
+                <InputBase
+                  placeholder="Aa"
+                  value={messageText}
+                  multiline
+                  minRows={1}
+                  maxRows={5}
+                  onChange={(event) => setMessageText(event.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
+                  }}
+                  sx={{
+                    flex: 1,
+                    fontSize: 16,
+                    color: "#111827",
+                    lineHeight: 1.45,
+                    py: 0.35,
+                    maxHeight: 132,
+                    overflowY: "auto",
                     scrollbarWidth: "thin",
                     scrollbarColor: "rgba(100,116,139,0.45) transparent",
                     "&::-webkit-scrollbar": {
@@ -2553,47 +2530,72 @@ export default function ConversationPage() {
                       width: 0,
                       height: 0,
                     },
-                  },
+                    "& textarea": {
+                      overflowY: "auto !important",
+                      scrollbarWidth: "thin",
+                      scrollbarColor: "rgba(100,116,139,0.45) transparent",
+                      "&::-webkit-scrollbar": {
+                        width: 8,
+                      },
+                      "&::-webkit-scrollbar-track": {
+                        background: "transparent",
+                      },
+                      "&::-webkit-scrollbar-thumb": {
+                        backgroundColor: "rgba(100,116,139,0.38)",
+                        borderRadius: "999px",
+                        border: "2px solid transparent",
+                        backgroundClip: "content-box",
+                      },
+                      "&::-webkit-scrollbar-thumb:hover": {
+                        backgroundColor: "rgba(71,85,105,0.55)",
+                      },
+                      "&::-webkit-scrollbar-button": {
+                        display: "none",
+                        width: 0,
+                        height: 0,
+                      },
+                    },
+                  }}
+                />
+
+                <Box ref={emojiPickerRef} sx={{ position: "relative", flexShrink: 0 }}>
+                  {showEmojiPicker && (
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        right: 0,
+                        bottom: "calc(100% + 12px)",
+                        zIndex: 10,
+                        boxShadow: "0 10px 30px rgba(0,0,0,0.18)",
+                        borderRadius: 2,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <EmojiPicker onEmojiClick={handleEmojiClick} />
+                    </Box>
+                  )}
+
+                  <IconButton onClick={() => setShowEmojiPicker((prev) => !prev)} sx={{ color: "#2563eb", p: 0.5, mb: 0.15 }}>
+                    <SentimentSatisfiedAltIcon />
+                  </IconButton>
+                </Box>
+              </Paper>
+
+              <IconButton
+                onClick={sendMessage}
+                sx={{
+                  bgcolor: "#2563eb",
+                  color: "#fff",
+                  p: 1.2,
+                  "&:hover": { bgcolor: "#1d4ed8" },
+                  flexShrink: 0,
                 }}
-              />
-
-              <Box ref={emojiPickerRef} sx={{ position: "relative", flexShrink: 0 }}>
-                {showEmojiPicker && (
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      right: 0,
-                      bottom: "calc(100% + 12px)",
-                      zIndex: 10,
-                      boxShadow: "0 10px 30px rgba(0,0,0,0.18)",
-                      borderRadius: 2,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <EmojiPicker onEmojiClick={handleEmojiClick} />
-                  </Box>
-                )}
-
-                <IconButton onClick={() => setShowEmojiPicker((prev) => !prev)} sx={{ color: "#2563eb", p: 0.5, mb: 0.15 }}>
-                  <SentimentSatisfiedAltIcon />
-                </IconButton>
-              </Box>
-            </Paper>
-
-            <IconButton
-              onClick={sendMessage}
-              sx={{
-                bgcolor: "#2563eb",
-                color: "#fff",
-                p: 1.2,
-                "&:hover": { bgcolor: "#1d4ed8" },
-                flexShrink: 0,
-              }}
-            >
-              <SendIcon sx={{ fontSize: 22 }} />
-            </IconButton>
+              >
+                <SendIcon sx={{ fontSize: 22 }} />
+              </IconButton>
+            </Box>
           </Box>
-        </Box>
+        )}
       </Box>
 
       <Box

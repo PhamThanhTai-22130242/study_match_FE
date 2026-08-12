@@ -31,10 +31,19 @@ const Footer: React.FC = () => {
 
   const handleNavClick = (href: string) => {
     if (href.startsWith("#")) {
-      const el = document.querySelector(href);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-      } else {
+      if (href === "#") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      try {
+        const el = document.querySelector(href);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth" });
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      } catch (err) {
+        console.error("Invalid selector:", href, err);
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     }

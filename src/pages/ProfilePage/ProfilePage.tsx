@@ -2627,32 +2627,20 @@ export default function ProfilePage() {
                                 justifyContent: "center"
                               }}
                             >
-                              {friend.avatarUrl ? (
-                                <Box
-                                  component="img"
-                                  src={friend.avatarUrl}
-                                  alt={friend.fullName}
-                                  sx={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover",
-                                  }}
-                                />
-                              ) : (
-                                <Avatar
-                                  variant="rounded"
-                                  sx={{
-                                    width: "100%",
-                                    height: "100%",
-                                    borderRadius: "8px",
-                                    bgcolor: "#3b82f6",
-                                    fontSize: "28px",
-                                    fontWeight: "bold"
-                                  }}
-                                >
-                                  {friend.fullName.charAt(0).toUpperCase()}
-                                </Avatar>
-                              )}
+                              <Avatar
+                                variant="rounded"
+                                src={friend.avatarUrl || undefined}
+                                sx={{
+                                  width: "100%",
+                                  height: "100%",
+                                  borderRadius: "8px",
+                                  bgcolor: "#3b82f6",
+                                  fontSize: "28px",
+                                  fontWeight: "bold"
+                                }}
+                              >
+                                {friend.fullName ? friend.fullName.charAt(0).toUpperCase() : ""}
+                              </Avatar>
                             </Box>
                             <Typography
                               sx={{
