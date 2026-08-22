@@ -16,7 +16,9 @@ export {
   getTargetTypeLabel,
   getTargetTypeValue,
   getUpdatedAtValue,
+  parseReportTargetData,
 } from "../../utils/reportUtils";
+export type { ParsedReportTargetData } from "../../utils/reportUtils";
 
 export const MY_REPORTS_PAGE_SIZE = 10;
 

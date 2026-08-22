@@ -113,6 +113,20 @@ export async function updatePost(postId: number, payload: {
   return requireSocialOk(res, "Cannot update post");
 }
 
+export async function getPostById(postId: number): Promise<SocialPost | null> {
+  try {
+    const res = await apiFetch<any>(`${BASE_SOCIAL_SERVICE}/social/posts/${postId}`);
+    if (res && isApiSuccess(res)) {
+      return unwrap(res.data ?? res);
+    }
+    if (res?.data) return res.data;
+    return null;
+  } catch (error) {
+    console.error("Failed to fetch post by id", error);
+    return null;
+  }
+}
+
 export async function deletePost(postId: number, actorId: number): Promise<void> {
   const res = await apiFetch<any>(`${BASE_SOCIAL_SERVICE}/social/posts/${postId}?actorId=${actorId}`, {
     method: "DELETE",

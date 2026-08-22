@@ -303,6 +303,21 @@ export async function submitStudyFeedback(
   return response;
 }
 
+export async function getStudyFeedbackBySessionAndUser(
+  sessionId: number,
+  userId: number,
+): Promise<APIResponseData<SubmitStudyFeedbackResponse | null>> {
+  const response = await apiFetch<SubmitStudyFeedbackResponse | null>(
+    `/api/study-feedbacks/session/${sessionId}/user/${userId}`,
+    {
+      method: "GET",
+    },
+    API_BASE_URL,
+  );
+
+  return response;
+}
+
 export async function getAdminSessionStats(): Promise<
   APIResponseData<AdminSessionStatsResponse>
 > {

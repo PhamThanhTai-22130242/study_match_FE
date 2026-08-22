@@ -37,7 +37,7 @@ steps:
       - '--port'
       - '8080'
       - '--min-instances'
-      - '0'
+      - '1'
       - '--max-instances'
       - '2'
       - '--allow-unauthenticated'

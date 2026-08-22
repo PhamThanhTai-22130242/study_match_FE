@@ -113,16 +113,16 @@ export function recallMess(conversationId: number, messageId: number) {
     });
 }
 
-export async function uploadMedia(conversationID: string, file: File, content: string) {
+export async function uploadMedia(conversationID: string, file: File, content: string = "") {
     let url = `${BASE_CHAT_SERVICE}/messages/media`
     let formData = new FormData();
     formData.append('conversationID', conversationID)
     formData.append('file', file)
-    formData.append('type', file.type)
-    formData.append('content', content)
+    formData.append('type', file.type || 'application/octet-stream')
+    formData.append('content', content || '')
     formData.append('fileName', file.name)
     
-    await apiFetch<any>(url, {
+    return await apiFetch<any>(url, {
         method: "POST",
         body: formData as any,
     });

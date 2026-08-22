@@ -7,6 +7,7 @@ import type {
   FeedbackEligibilityResponse,
   FeedbackType,
   SubmitStudyFeedbackRequest,
+  SubmitStudyFeedbackResponse,
 } from "../types";
 
 function getFeedbackTitle(type: FeedbackType | null) {
@@ -64,9 +65,11 @@ function getReasonLabel(reason: string) {
 export default function FeedbackSubmitSheet({
   eligibility,
   onClose,
+  onSuccess,
 }: {
   eligibility: FeedbackEligibilityResponse;
   onClose: () => void;
+  onSuccess?: (response: SubmitStudyFeedbackResponse) => void;
 }) {
   const type = eligibility.feedbackType;
   const [rating, setRating] = useState(5);
@@ -142,8 +145,19 @@ export default function FeedbackSubmitSheet({
     try {
       setSubmitting(true);
       setSubmitError("");
-      await submitStudyFeedback(payload);
+      const res = await submitStudyFeedback(payload);
+      const feedbackData: SubmitStudyFeedbackResponse = (res as any)?.data?.data || res?.data || {
+        sessionId: payload.sessionId,
+        userId: payload.userId,
+        rating: payload.rating,
+        comment: payload.content,
+        content: payload.content,
+        feedbackType: payload.feedbackType,
+        createdAt: new Date().toISOString(),
+        eligibleForModel: payload.eligibleForModel,
+      };
       setSubmitted(true);
+      onSuccess?.(feedbackData);
     } catch {
       setSubmitError("Không thể gửi phản hồi. Vui lòng thử lại.");
     } finally {
@@ -185,14 +199,23 @@ export default function FeedbackSubmitSheet({
           {!canSubmit ? (
             <EmptyState text="Hiện tại bạn chưa thể gửi phản hồi cho buổi học này." />
           ) : submitted ? (
-            <div className="rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-5 text-center">
-              <CheckCircle2 className="mx-auto text-emerald-500" size={32} />
-              <div className="mt-3 text-sm font-bold text-gray-900">
-                Cảm ơn bạn đã gửi đánh giá
+            <div className="rounded-xl border border-gray-100 bg-gray-50/50 px-4 py-6 text-center space-y-4">
+              <CheckCircle2 className="mx-auto text-emerald-500" size={36} />
+              <div>
+                <div className="text-sm font-bold text-gray-900">
+                  Cảm ơn bạn đã gửi đánh giá
+                </div>
+                <p className="mt-1 text-sm leading-5 text-gray-500">
+                  Phản hồi của bạn đã được ghi nhận thành công.
+                </p>
               </div>
-              <p className="mt-1 text-sm leading-5 text-gray-500">
-                Phản hồi của bạn sẽ giúp buổi học sau phù hợp hơn.
-              </p>
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 text-xs font-bold text-white transition-all shadow-sm shadow-blue-600/10"
+              >
+                Hoàn tất
+              </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">

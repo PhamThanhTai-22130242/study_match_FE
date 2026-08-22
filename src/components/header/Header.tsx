@@ -44,7 +44,7 @@ import {
   respondToStudySession,
   respondToMultipleStudySessions
 } from "../../services/StudySessionService";
-import { X, Clock, MapPin, Video, BookOpen, Users } from "lucide-react";
+import { X, Clock, MapPin, Video, BookOpen, Users, AlertCircle } from "lucide-react";
 import { StudySessionResponse } from "../../pages/StudySession/types";
 import {
   getPendingGroupInvitations,
@@ -77,12 +77,12 @@ function formatSessionTimeRange(startTimeStr: string, endTimeStr: string) {
 
 function getStudyModeBadge(mode: string) {
   if (mode === "ONLINE") {
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">Online</span>;
+    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-white text-gray-700 border border-gray-200">Online</span>;
   }
   if (mode === "OFFLINE") {
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200">Trực tiếp</span>;
+    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-white text-gray-700 border border-gray-200">Trực tiếp</span>;
   }
-  return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-200">Kết hợp</span>;
+  return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-white text-gray-700 border border-gray-200">Kết hợp</span>;
 }
 
 const extractErrorMessage = (res: any, fallback: string): string => {
@@ -129,6 +129,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
   const [rejectedInvitations, setRejectedInvitations] = useState<{ groupName: string; inviteeName: string; inviteeUserId: number; timestamp: number }[]>([]);
   const [kickModalOpen, setKickModalOpen] = useState(false);
   const [kickGroupName, setKickGroupName] = useState("");
+  const [kickNotificationMessage, setKickNotificationMessage] = useState("");
   const user = useSelector((state: RootState) => state.user);
   const newMess = useSelector((state: RootState) => state.chat.newMess);
   const navigate = useNavigate();
@@ -358,9 +359,18 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
               ].slice(0, 20));
             });
         }
-      } else if (newMess.event === "GROUP_MEMBER_KICKED") {
+      } else if (newMess.event === "GROUP_MEMBER_KICKED" || newMess.event === "GROUP_STATUS_UPDATED") {
         const d = newMess.data as any;
-        setKickGroupName(d?.groupName || "nhóm học");
+        const gName = d?.groupName || "nhóm học";
+        const status = d?.status;
+        let msg = `Bạn đã bị mời ra khỏi nhóm "${gName}" bởi quản trị viên.`;
+        if (status === "INACTIVE") {
+          msg = `Nhóm "${gName}" đã bị ẩn bởi quản trị viên do vi phạm hoặc tạm ngưng hoạt động.`;
+        } else if (status === "DELETED") {
+          msg = `Nhóm "${gName}" đã bị xóa bởi quản trị viên.`;
+        }
+        setKickGroupName(gName);
+        setKickNotificationMessage(msg);
         setKickModalOpen(true);
         window.dispatchEvent(new Event("group_list_updated"));
         if (window.location.pathname.includes("/conversation")) {
@@ -1542,42 +1552,65 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
         open={kickModalOpen}
         onClose={() => {
           setKickModalOpen(false);
-          window.location.href = "/conversation";
+          if (window.location.pathname.includes("/conversation")) {
+            window.location.href = "/conversation";
+          }
         }}
         PaperProps={{
           sx: {
-            borderRadius: "12px",
-            padding: "20px",
-            maxWidth: "400px",
+            borderRadius: "16px",
+            padding: "24px",
+            maxWidth: "420px",
             textAlign: "center",
           },
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5, color: "#1f2937" }}>
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 1.5 }}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: "50%",
+              backgroundColor: "#fef2f2",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#dc2626",
+            }}
+          >
+            <AlertCircle size={26} />
+          </Box>
+        </Box>
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: "#111827", fontSize: "17px" }}>
           Thông báo nhóm học
         </Typography>
-        <Typography variant="body2" sx={{ color: "#4b5563", mb: 3 }}>
-          Bạn đã bị mời ra khỏi nhóm <strong>{kickGroupName}</strong> bởi quản trị viên.
+        <Typography variant="body2" sx={{ color: "#4b5563", mb: 3, lineHeight: 1.6 }}>
+          {kickNotificationMessage || `Bạn đã bị mời ra khỏi nhóm "${kickGroupName}" bởi quản trị viên.`}
         </Typography>
         <Box sx={{ display: "flex", justifyContent: "center" }}>
           <Button
             variant="contained"
             onClick={() => {
               setKickModalOpen(false);
-              window.location.href = "/conversation";
+              if (window.location.pathname.includes("/conversation")) {
+                window.location.href = "/conversation";
+              }
             }}
             sx={{
               backgroundColor: "#2563eb",
               color: "#ffffff",
               textTransform: "none",
-              borderRadius: "6px",
-              padding: "6px 20px",
+              borderRadius: "8px",
+              fontWeight: 600,
+              padding: "8px 28px",
+              boxShadow: "none",
               "&:hover": {
                 backgroundColor: "#1d4ed8",
+                boxShadow: "none",
               },
             }}
           >
-            Xác nhận
+            Đã hiểu
           </Button>
         </Box>
       </Dialog>

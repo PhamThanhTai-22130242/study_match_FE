@@ -484,7 +484,7 @@ export default function AdminOverviewPage() {
 
                 </div>
                 <p className="text-xs text-slate-500">
-                  Thống kê môn học theo số lượng nhóm (Loại trừ nhóm Community).
+                  Thống kê môn học theo số lượng nhóm.
                 </p>
               </div>
 
@@ -819,11 +819,11 @@ export default function AdminOverviewPage() {
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-bold text-slate-900">
-                    Thống kê Thời Lượng Học Tập (Giờ)
+                    Thống kê Thời Lượng Học Tập
                   </h2>
                 </div>
                 <p className="text-xs text-slate-500">
-                  Tổng thời gian học của toàn bộ học viên (Online video call vs Offline).
+                  Tổng thời gian học của toàn bộ học viên.
                 </p>
               </div>
 

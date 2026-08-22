@@ -79,6 +79,13 @@ const getLastMessagePreview = (
         prefix = "Bạn: ";
     }
 
+    if (lastMessage.moderationStatus === "HATE" || lastMessage.moderation_status === "HATE") {
+        return `${prefix}Tin nhắn bị vi phạm chính sách`;
+    }
+    if (lastMessage.moderationStatus === "OFFENSIVE" || lastMessage.moderation_status === "OFFENSIVE") {
+        return `${prefix}Nội dung có thể gây khó chịu`;
+    }
+
     let body = "";
     if (lastMessage.type === "CALL_AUDIO" || lastMessage.type === "CALL_VIDEO") {
         body = formatCallPreview(lastMessage);

@@ -4,6 +4,8 @@ import type {
   StudySessionVm,
   StudySessionResponse,
   JoinStudySessionResponse,
+  FeedbackEligibilityResponse,
+  SubmitStudyFeedbackResponse,
 } from "../types";
 import {
   getStudySessionById,
@@ -13,7 +15,10 @@ import {
   cancelStudySession,
   respondToMultipleStudySessions,
   getSessionsByRecurrenceId,
+  getFeedbackEligibility,
+  getStudyFeedbackBySessionAndUser,
 } from "../../../services/StudySessionService";
+import FeedbackSubmitSheet from "./FeedbackModal";
 import { toast } from "react-toastify";
 import {
   Clock,
@@ -25,7 +30,8 @@ import {
   X,
   AlertCircle,
   BarChart3,
-  ExternalLink
+  ExternalLink,
+  CheckCircle2,
 } from "lucide-react";
 
 interface SessionDetailModalProps {
@@ -68,12 +74,26 @@ function formatSessionSingleOptionDate(s: StudySessionVm) {
 
 function getStudyModeBadge(mode: string) {
   if (mode === "ONLINE") {
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">Online</span>;
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-gray-700 border border-gray-200">
+        <Video className="h-3 w-3 text-gray-500" />
+        Online
+      </span>
+    );
   }
   if (mode === "OFFLINE") {
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200">Trực tiếp</span>;
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-gray-700 border border-gray-200">
+        <MapPin className="h-3 w-3 text-gray-500" />
+        Trực tiếp
+      </span>
+    );
   }
-  return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-200">Kết hợp</span>;
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-gray-700 border border-gray-200">
+      Kết hợp
+    </span>
+  );
 }
 
 function getParticipantStatusLabel(status: string) {
@@ -209,6 +229,10 @@ export function SessionDetailModal({
   const [recurrenceSessions, setRecurrenceSessions] = useState<StudySessionResponse[]>([]);
   const [selectedRecurrenceSessionIds, setSelectedRecurrenceSessionIds] = useState<number[]>([]);
   const [loadingRecurrence, setLoadingRecurrence] = useState(false);
+  const [feedbackEligibility, setFeedbackEligibility] = useState<FeedbackEligibilityResponse | null>(null);
+  const [userFeedback, setUserFeedback] = useState<SubmitStudyFeedbackResponse | null>(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -296,6 +320,60 @@ export function SessionDetailModal({
     };
   }, [session?.id, session?.sessionType, session?.createdByUserId]);
 
+  useEffect(() => {
+    let mounted = true;
+    async function loadFeedback() {
+      if (!session) {
+        setFeedbackEligibility(null);
+        setUserFeedback(null);
+        return;
+      }
+      const userIdVal = Number(localStorage.getItem("userId"));
+      if (!Number.isFinite(userIdVal) || userIdVal <= 0) {
+        setFeedbackEligibility(null);
+        setUserFeedback(null);
+        return;
+      }
+      const ended =
+        session.status === "COMPLETED" ||
+        hasSessionEnded(session) ||
+        (detail && (detail.status === "COMPLETED" || hasSessionEnded(mapResponseToVm(detail, session))));
+      if (!ended) {
+        setFeedbackEligibility(null);
+        setUserFeedback(null);
+        return;
+      }
+      try {
+        setLoadingFeedback(true);
+        const [eligibilityRes, feedbackRes] = await Promise.allSettled([
+          getFeedbackEligibility(session.id, userIdVal),
+          getStudyFeedbackBySessionAndUser(session.id, userIdVal),
+        ]);
+        if (!mounted) return;
+        if (eligibilityRes.status === "fulfilled" && eligibilityRes.value?.data) {
+          setFeedbackEligibility(eligibilityRes.value.data);
+        } else {
+          setFeedbackEligibility(null);
+        }
+        if (feedbackRes.status === "fulfilled" && feedbackRes.value?.data) {
+          setUserFeedback(feedbackRes.value.data);
+        } else {
+          setUserFeedback(null);
+        }
+      } catch {
+        // ignore
+      } finally {
+        if (mounted) {
+          setLoadingFeedback(false);
+        }
+      }
+    }
+    loadFeedback();
+    return () => {
+      mounted = false;
+    };
+  }, [session?.id, session?.status, session?.endTime, detail?.status, detail?.endTime]);
+
   const currentSession = useMemo<StudySessionVm | null>(() => {
     if (!detail || !session) return session;
     return {
@@ -324,8 +402,37 @@ export function SessionDetailModal({
   const isCreator = (currentSession?.createdByUserId || session?.createdByUserId) === userId;
   const isCancelled = (currentSession?.status || session?.status) === "CANCELLED";
   const isCompleted = (currentSession?.status || session?.status) === "COMPLETED";
+  const isEnded = isCompleted || hasSessionEnded(currentSession);
   const startTimeVal = new Date(currentSession?.startTime || session?.startTime || 0).getTime();
+  const endTimeVal = new Date(currentSession?.endTime || session?.endTime || 0).getTime();
+  const isOngoing =
+    (currentSession?.status || session?.status) === "ONGOING" ||
+    (!isEnded && !isCancelled && startTimeVal <= now && now <= endTimeVal);
   const canCancel = startTimeVal - now >= 5 * 60 * 1000;
+
+  const canEvaluate =
+    isEnded &&
+    !isCancelled &&
+    (
+      feedbackEligibility?.canSubmitFeedback ||
+      Boolean(feedbackEligibility?.feedbackType) ||
+      ["ACCEPTED", "JOINED", "COMPLETED", "PARTIAL"].includes(currentSession?.participantStatus || "")
+    );
+
+  const activeEligibility: FeedbackEligibilityResponse = feedbackEligibility || {
+    sessionId: session?.id || 0,
+    userId: userId || 0,
+    targetUserId: null,
+    groupId: session?.groupId ?? null,
+    sessionType: (currentSession?.sessionType || session?.sessionType || "USER_PAIR") as any,
+    sessionEnded: true,
+    attendanceStatus: "COMPLETED",
+    totalDurationSeconds: 3600,
+    minRequiredDurationSeconds: 1800,
+    canSubmitFeedback: true,
+    feedbackType: "SESSION_FEEDBACK",
+    eligibleForModel: true,
+  };
 
   const showFooter =
     (currentSession?.participantStatus === "PENDING" && !isCancelled) ||
@@ -536,7 +643,48 @@ export function SessionDetailModal({
     <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-gray-900/40 px-4 py-6">
       <div className="relative w-full max-w-2xl flex flex-col max-h-[90vh] bg-white rounded-2xl border border-gray-100 shadow-2xl overflow-hidden animate-scale-in">
         <div className="flex items-start justify-between border-b border-gray-100 bg-white px-6 py-5 shrink-0">
-          <div>
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {isCancelled ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
+                  <AlertCircle className="h-3.5 w-3.5 text-rose-500" />
+                  Đã hủy
+                </span>
+              ) : isEnded ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-gray-500" />
+                  Đã kết thúc
+                </span>
+              ) : isOngoing ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  </span>
+                  Đang diễn ra
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                  <Clock className="h-3.5 w-3.5 text-blue-500" />
+                  Đã lên lịch
+                </span>
+              )}
+
+              {getStudyModeBadge(currentSession?.studyMode || session.studyMode)}
+
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-gray-700 border border-gray-200">
+                {isGroup ? <Users className="h-3 w-3 text-gray-500" /> : <User className="h-3 w-3 text-gray-500" />}
+                {isGroup ? "Nhóm học" : "Cặp đôi 1-1"}
+              </span>
+
+              {(currentSession?.subjectName || session.subjectName) && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-gray-700 border border-gray-200">
+                  <BookOpen className="h-3 w-3 text-gray-500" />
+                  {currentSession?.subjectName || session.subjectName}
+                </span>
+              )}
+            </div>
+
             <h2 className="text-lg font-bold text-gray-900 leading-snug">
               {currentSession?.title || session.title}
             </h2>
@@ -734,6 +882,58 @@ export function SessionDetailModal({
                   </div>
                 </div>
               )}
+
+              {/* Đánh giá buổi học (Khi buổi học đã kết thúc) */}
+              {(isEnded || isCompleted) && !isCancelled && (
+                <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        Đánh giá buổi học
+                      </span>
+                      <div className="text-xs text-gray-600 mt-0.5">
+                        {userFeedback
+                          ? "Bạn đã gửi đánh giá cho buổi học này."
+                          : "Đánh giá chất lượng và trải nghiệm học tập của bạn."}
+                      </div>
+                    </div>
+
+                    {userFeedback ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                        Đã đánh giá
+                      </span>
+                    ) : canEvaluate ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowFeedbackModal(true)}
+                        className="rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-2 text-xs font-bold text-white transition-all shadow-sm shadow-blue-600/10 shrink-0"
+                      >
+                        Đánh giá buổi học
+                      </button>
+                    ) : (
+                      <span className="text-xs text-gray-400">
+                        Chưa có đánh giá
+                      </span>
+                    )}
+                  </div>
+
+                  {userFeedback && (
+                    <div className="rounded-lg bg-gray-50 border border-gray-100 p-3 text-xs text-gray-700 space-y-1">
+                      {userFeedback.rating && (
+                        <div className="font-semibold text-gray-800">
+                          Điểm đánh giá: {userFeedback.rating}/5
+                        </div>
+                      )}
+                      {(userFeedback.comment || userFeedback.content) && (
+                        <p className="text-gray-600 italic">
+                          "{userFeedback.comment || userFeedback.content}"
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
@@ -832,6 +1032,18 @@ export function SessionDetailModal({
           </div>
         )}
       </div>
+
+      {showFeedbackModal && (
+        <FeedbackSubmitSheet
+          eligibility={activeEligibility}
+          onClose={() => setShowFeedbackModal(false)}
+          onSuccess={(newFeedback) => {
+            setUserFeedback(newFeedback);
+            setShowFeedbackModal(false);
+            toast.success("Cảm ơn bạn đã gửi đánh giá buổi học!");
+          }}
+        />
+      )}
 
       {showRecurrenceModal && (
         <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-gray-900/50 px-4 py-6">

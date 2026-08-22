@@ -23,7 +23,10 @@ export {
   getTargetTypeLabel,
   getTargetTypeValue,
   getUpdatedAtValue,
+  parseReportTargetData,
+  REPORT_POST_BG_STYLES,
 } from "../../../utils/reportUtils";
+export type { ParsedReportTargetData } from "../../../utils/reportUtils";
 
 export const ADMIN_REPORT_PAGE_SIZE = 10;
 

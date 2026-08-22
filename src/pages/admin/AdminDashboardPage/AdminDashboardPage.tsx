@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useConfirm } from "../../../components/modal/ConfirmModal";
 import {
@@ -83,6 +83,30 @@ function getInitials(name?: string | null) {
     .map((part) => part[0])
     .join("")
     .toUpperCase();
+}
+
+function formatReviewReason(reason?: string): string {
+  if (!reason) return "";
+  return reason
+    .replace(/v[ÃAÂa][^\s]*\s+/gi, "và ")
+    .replace(/v\?+\s+/g, "và ")
+    .replace(/\s+v[ÃAÂa]\s+/gi, " và ");
+}
+
+function formatReviewSuggestion(suggestion?: string): string {
+  if (!suggestion) return "";
+  const lower = suggestion.toLowerCase();
+  if (lower.includes("kick")) return "Đề xuất kick khỏi nhóm";
+  if (lower.includes("mute")) return "Đề xuất mute 24 giờ và review";
+  if (
+    lower.includes("báo") ||
+    lower.includes("b\u00e1o") ||
+    lower.includes("cảnh") ||
+    lower.includes("c\u1ea3nh")
+  ) {
+    return "Cảnh báo lần 1";
+  }
+  return suggestion;
 }
 
 function UserAvatar({
@@ -229,46 +253,34 @@ export default function AdminDashboardPage() {
     return () => clearTimeout(timer);
   }, [groupsSearch, debouncedGroupsSearch]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    async function loadDashboard() {
-      try {
-        setLoading(true);
-        setError(null);
+      const response = await getAdminChatDashboard({
+        groupLimit: 10,
+        memberLimit: 10,
+      });
 
-        const response = await getAdminChatDashboard({
-          groupLimit: 10,
-          memberLimit: 10,
-        });
-
-        if (cancelled) return;
-
-        if (!response.success || !response.data) {
-          setDashboard(emptyDashboard);
-          setError(response.message || "Không thể tải dashboard tin nhắn");
-          return;
-        }
-
-        setDashboard(response.data);
-      } catch {
-        if (!cancelled) {
-          setDashboard(emptyDashboard);
-          setError("Không thể kết nối chat service");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+      if (!response.success || !response.data) {
+        setDashboard(emptyDashboard);
+        setError(response.message || "Không thể tải dashboard tin nhắn");
+        return;
       }
+
+      setDashboard(response.data);
+    } catch {
+      setDashboard(emptyDashboard);
+      setError("Không thể kết nối chat service");
+    } finally {
+      setLoading(false);
     }
-
-    loadDashboard();
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   useEffect(() => {
     let cancelled = false;
@@ -475,8 +487,12 @@ export default function AdminDashboardPage() {
         topMembers: prev.topMembers.filter(
           (member) => member.groupId !== selectedGroupRisk.groupId,
         ),
+        reviewQueue: prev.reviewQueue.filter(
+          (item) => !item.id.endsWith(`-${selectedGroupRisk.groupId}`),
+        ),
       }));
       closeGroupModal();
+      fetchDashboardData();
     } catch {
       setGroupDetailError("Không thể kết nối group service");
     } finally {
@@ -514,6 +530,7 @@ export default function AdminDashboardPage() {
             : group,
         ),
       }));
+      fetchDashboardData();
     } catch {
       setGroupDetailError("Không thể kết nối group service");
     } finally {
@@ -550,6 +567,7 @@ export default function AdminDashboardPage() {
             : group,
         ),
       }));
+      fetchDashboardData();
     } catch {
       setGroupDetailError("Không thể kết nối group service");
     } finally {
@@ -560,13 +578,18 @@ export default function AdminDashboardPage() {
   async function handleKickSelectedUser() {
     if (!selectedViolationUser || !selectedKickGroupId) return;
 
+    const currentUserId = selectedViolationUser.userId;
+    const currentGroupId = selectedKickGroupId;
+    const currentFullName = selectedViolationUser.fullName;
+    const currentGroupName = selectedKickGroup?.groupName;
+
     try {
       setKickLoading(true);
       setDetailError(null);
 
       const response = await kickAdminChatUserFromGroup({
-        userId: selectedViolationUser.userId,
-        groupId: selectedKickGroupId,
+        userId: currentUserId,
+        groupId: currentGroupId,
       });
 
       if (!response.success) {
@@ -579,8 +602,16 @@ export default function AdminDashboardPage() {
         topMembers: prev.topMembers.filter(
           (member) =>
             !(
-              member.senderId === selectedViolationUser.userId &&
-              member.groupId === selectedKickGroupId
+              member.senderId === currentUserId &&
+              member.groupId === currentGroupId
+            ),
+        ),
+        reviewQueue: prev.reviewQueue.filter(
+          (item) =>
+            item.id !== `case-${currentUserId}-${currentGroupId}` &&
+            !(
+              item.senderName === currentFullName &&
+              item.groupName === currentGroupName
             ),
         ),
       }));
@@ -589,12 +620,15 @@ export default function AdminDashboardPage() {
           ? {
             ...prev,
             groups: prev.groups.filter(
-              (group) => group.groupId !== selectedKickGroupId,
+              (group) => group.groupId !== currentGroupId,
             ),
           }
           : prev,
       );
       setSelectedKickGroupId(null);
+
+      // Re-fetch dashboard to guarantee all metrics & queues are in sync with backend
+      fetchDashboardData();
     } catch {
       setDetailError("Không thể kết nối chat service");
     } finally {
@@ -707,11 +741,11 @@ export default function AdminDashboardPage() {
                     </p>
                   </div>
                 </div>
-                {loading ? (
+                {/* {loading ? (
                   <div className="mt-3 h-4 w-32 animate-pulse rounded bg-sand-100" />
                 ) : (
                   <p className="mt-3 text-xs text-sand-500">{card.helper}</p>
-                )}
+                )} */}
               </div>
             );
           })}
@@ -1168,10 +1202,10 @@ export default function AdminDashboardPage() {
                     </span>
                   </div>
                   <p className="mt-3 text-xs leading-5 text-sand-600">
-                    {item.reason}
+                    {formatReviewReason(item.reason)}
                   </p>
                   <p className="mt-2 text-xs font-medium text-sand-900">
-                    {item.suggestion}
+                    {formatReviewSuggestion(item.suggestion)}
                   </p>
                 </div>
               ))}

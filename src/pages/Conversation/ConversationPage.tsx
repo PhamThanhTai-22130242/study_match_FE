@@ -253,7 +253,8 @@ const formatDateTime = (value?: string | null) => {
 };
 
 const getMessagePreview = (message: any) => {
-  if (message.moderationStatus === "HATE" || message.moderation_status === "HATE" || message.moderationStatus === "OFFENSIVE" || message.moderation_status === "OFFENSIVE") return "Tin nhắn bị vi phạm chính sách";
+  if (message.moderationStatus === "HATE" || message.moderation_status === "HATE") return "Tin nhắn bị vi phạm chính sách";
+  if (message.moderationStatus === "OFFENSIVE" || message.moderation_status === "OFFENSIVE") return "Nội dung có thể gây khó chịu";
   if (message.isDeleted) return "Tin nhắn đã được thu hồi";
   if (message.content?.trim()) return message.content;
   if (message.fileName) return message.fileName;
@@ -1310,6 +1311,25 @@ export default function ConversationPage() {
   }, [storeNewMess, storeEvent, applyMessageAck]);
 
   useEffect(() => {
+    if (!storeNewMess) return;
+    const evt = storeEvent || (storeNewMess as any)?.event;
+    if (
+      evt === SocketEvent.GROUP_MEMBER_KICKED ||
+      evt === SocketEvent.GROUP_STATUS_UPDATED ||
+      evt === "GROUP_MEMBER_KICKED" ||
+      evt === "GROUP_STATUS_UPDATED"
+    ) {
+      const data = storeNewMess.data as any;
+      const targetGroupId = Number(data?.groupId);
+      if (isGroupConversation && groupId && targetGroupId === groupId) {
+        setConversation([]);
+        dispatch(updateCurrentConverId({ currentConversationId: null }));
+        navigate("/conversation", { replace: true });
+      }
+    }
+  }, [storeNewMess, storeEvent, isGroupConversation, groupId, dispatch, navigate]);
+
+  useEffect(() => {
     if (!storeNewMess?.data) return;
 
     const socketConvoId = Number((storeNewMess.data as any).conversationId);
@@ -1876,49 +1896,6 @@ export default function ConversationPage() {
       console.error("Failed to update font", error);
     }
   };
-
-  const handleStartCall = useCallback(async (callType: "AUDIO" | "VIDEO" = "AUDIO") => {
-    if (!conversationId.current || videoCallLoading) return;
-
-    setVideoCallLoading(true);
-    try {
-      const call = await startVideoCall(
-        conversationId.current,
-        currentUser.username || `User ${currentUserId}`,
-        currentUser.avatar,
-        callType,
-      );
-      setRejectedVideoCall(false);
-      setWaitingVideoCall({
-        ...call,
-        isGroupCall: isGroupConversation,
-        groupId: isGroupConversation ? groupId : call.groupId,
-        groupName: isGroupConversation ? callTargetName : call.groupName,
-        conversationType: isGroupConversation ? 0 : call.conversationType,
-      });
-      localStorage.setItem(`videoCallPeer:${call.sessionId}`, JSON.stringify({
-        userId: isGroupConversation ? null : targetUserId,
-        fullName: callTargetName,
-        avatar: callTargetAvatar,
-        isGroupCall: isGroupConversation,
-      }));
-    } catch (error) {
-      console.error("[Conversation][start-call-error]", error);
-      toast.error(error instanceof Error ? error.message : "Không thể bắt đầu cuộc gọi");
-    } finally {
-      setVideoCallLoading(false);
-    }
-  }, [
-    callTargetAvatar,
-    callTargetName,
-    currentUser.avatar,
-    currentUser.username,
-    currentUserId,
-    groupId,
-    isGroupConversation,
-    targetUserId,
-    videoCallLoading,
-  ]);
 
   const handleCancelWaitingCall = async () => {
     if (!waitingVideoCall || cancelCallLoading) return;

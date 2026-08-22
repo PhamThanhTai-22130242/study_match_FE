@@ -180,11 +180,21 @@ export interface SubmitStudyFeedbackRequest {
 }
 
 export interface SubmitStudyFeedbackResponse {
-  feedbackId: number;
+  id?: number;
+  feedbackId?: number;
   sessionId: number;
-  userId: number;
+  userId?: number;
+  reviewerUserId?: number;
+  targetUserId?: number | null;
+  groupId?: number | null;
   feedbackType: FeedbackType;
-  eligibleForModel: boolean;
+  rating?: number;
+  matchedQualityScore?: number;
+  communicationScore?: number;
+  studyEffectivenessScore?: number;
+  eligibleForModel?: boolean;
+  comment?: string;
+  content?: string;
   createdAt: string;
 }
 

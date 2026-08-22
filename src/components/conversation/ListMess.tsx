@@ -1428,6 +1428,9 @@ function ListMess({ theme, fontFamily, conversation, setReplyMess, visibleMessag
     }
 
     const getReplyPreviewText = (mess: MessageInterface) => {
+        if ((mess as any).replyToModerationStatus === "HATE" || (mess as any).replyToModerationStatus === "OFFENSIVE") {
+            return (mess as any).replyToModerationStatus === "HATE" ? "Tin nhắn bị vi phạm chính sách" : "Nội dung có thể gây khó chịu"
+        }
         if (mess.replyToDeleted) return "Tin nhắn đã được thu hồi"
         if (mess.replyToContent) return mess.replyToContent
         if (mess.replyToFileName) return mess.replyToFileName
