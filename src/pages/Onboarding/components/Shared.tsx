@@ -30,6 +30,7 @@ interface TInputProps {
     | "decimal"
     | "search";
   pattern?: string;
+  error?: boolean;
 }
 
 export function TInput({
@@ -39,6 +40,7 @@ export function TInput({
   type = "text",
   inputMode,
   pattern,
+  error = false,
 }: TInputProps) {
   const [focused, setFocused] = useState<boolean>(false);
   return (
@@ -51,8 +53,14 @@ export function TInput({
       onChange={(e) => onChange(e.target.value)}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
-      className={`w-full px-4 py-3 rounded-xl border bg-gray-50 text-sm text-gray-800 outline-none transition-all
-        ${focused ? "border-accent ring-2 ring-accent/20 bg-white" : "border-gray-200"}`}
+      className={`w-full px-4 py-3 rounded-xl border text-sm text-gray-800 outline-none transition-all
+        ${
+          error
+            ? "border-red-400 bg-red-50/30 ring-2 ring-red-200"
+            : focused
+            ? "border-accent ring-2 ring-accent/20 bg-white"
+            : "border-gray-200 bg-gray-50"
+        }`}
     />
   );
 }

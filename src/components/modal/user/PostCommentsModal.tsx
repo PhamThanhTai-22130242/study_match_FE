@@ -30,6 +30,7 @@ import {
 } from "../../../services/SocialPostService";
 import { parsePostContent, POST_BACKGROUNDS } from "./CreatePostDialog";
 import PostReactionsModal from "./PostReactionsModal";
+import PostMediaModal from "./PostMediaModal";
 
 type PostCommentsModalProps = {
   open: boolean;
@@ -137,7 +138,21 @@ const getReactionEmoji = (type: string) => {
   }
 };
 
-function MediaRenderer({ item, isVideo, isDoc }: { item: any; isVideo: boolean; isDoc: boolean }) {
+function MediaRenderer({
+  item,
+  alt,
+  isVideo,
+  isDoc,
+  fitMode = "cover",
+}: {
+  item: any;
+  alt?: string;
+  isVideo: boolean;
+  isDoc: boolean;
+  fitMode?: "cover" | "contain";
+}) {
+  const [loading, setLoading] = useState(true);
+
   if (isDoc) {
     return (
       <Box
@@ -178,28 +193,94 @@ function MediaRenderer({ item, isVideo, isDoc }: { item: any; isVideo: boolean; 
   }
 
   return (
-    <Box sx={{ width: "100%", height: "100%", position: "relative", bgcolor: isVideo ? "#000" : "#f1f5f9" }}>
+    <Box
+      sx={{
+        width: "100%",
+        height: "100%",
+        position: "relative",
+        bgcolor: isVideo ? "#000" : fitMode === "contain" ? "#f8fafc" : "#f1f5f9",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {loading && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 3,
+          }}
+        >
+          <CircularProgress size={28} sx={{ color: "#3b82f6" }} />
+        </Box>
+      )}
+
       {isVideo ? (
         <Box sx={{ width: "100%", height: "100%", position: "relative" }}>
           <Box
             component="video"
             src={item.mediaUrl}
-            controls
+            onLoadedData={() => setLoading(false)}
+            onCanPlay={() => setLoading(false)}
+            onError={() => setLoading(false)}
             sx={{
               width: "100%",
               height: "100%",
-              objectFit: "contain",
+              objectFit: fitMode,
+              display: loading ? "none" : "block",
             }}
           />
+          {!loading && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: "rgba(0,0,0,0.15)",
+              }}
+            >
+              <Box
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  bgcolor: "rgba(255, 255, 255, 0.9)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
+                }}
+              >
+                <span style={{ fontSize: "20px", color: "#1e293b", marginLeft: "3px" }}>▶</span>
+              </Box>
+            </Box>
+          )}
         </Box>
       ) : (
         <Box
           component="img"
           src={item.mediaUrl}
+          alt={alt || "media"}
+          onLoad={() => setLoading(false)}
+          onError={() => setLoading(false)}
           sx={{
             width: "100%",
             height: "100%",
-            objectFit: "contain",
+            maxHeight: fitMode === "contain" ? "380px" : "100%",
+            objectFit: fitMode,
+            display: loading ? "none" : "block",
           }}
         />
       )}
@@ -223,6 +304,8 @@ export default function PostCommentsModal({
   const [sendingComment, setSendingComment] = useState(false);
   const [showReactionsPopup, setShowReactionsPopup] = useState(false);
   const [reactionsModalOpen, setReactionsModalOpen] = useState(false);
+  const [mediaModalOpen, setMediaModalOpen] = useState(false);
+  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(5);
 
   const mediaItems = post.media || [];
@@ -230,6 +313,228 @@ export default function PostCommentsModal({
   const { backgroundId, content: parsedContent } = useMemo(() => parsePostContent(post.content), [post.content]);
   const hasBackground = backgroundId !== "none" && mediaItems.length === 0;
   const currentBg = POST_BACKGROUNDS.find(bg => bg.id === backgroundId);
+
+  const renderMediaGrid = () => {
+    const visualItems = mediaItems.filter(
+      (item) => item.mediaType === "VIDEO" || isImageUrl(item.mediaUrl)
+    );
+    const docItems = mediaItems.filter(
+      (item) => item.mediaType !== "VIDEO" && !isImageUrl(item.mediaUrl)
+    );
+
+    const renderMediaTile = (
+      item: (typeof mediaItems)[0],
+      originalIndex: number,
+      height: string | number
+    ) => {
+      const isVideo = item.mediaType === "VIDEO";
+      const isDoc = !isVideo && !isImageUrl(item.mediaUrl);
+
+      return (
+        <Box
+          key={item.id ?? `${item.mediaUrl}-${originalIndex}`}
+          onClick={() => {
+            if (!isDoc) {
+              setActiveMediaIndex(originalIndex);
+              setMediaModalOpen(true);
+            }
+          }}
+          sx={{
+            width: "100%",
+            height: height,
+            bgcolor: "#0f172a",
+            overflow: "hidden",
+            cursor: isDoc ? "default" : "pointer",
+            position: "relative",
+            transition: "opacity 0.2s ease",
+            "&:hover": {
+              opacity: isDoc ? 1 : 0.95,
+            },
+            "& video, & img": {
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: "block",
+            },
+          }}
+        >
+          <MediaRenderer
+            item={item}
+            alt={`post media ${originalIndex + 1}`}
+            isVideo={isVideo}
+            isDoc={isDoc}
+          />
+          {/* Plus overlay for more than 5 items */}
+          {visualItems.length > 5 && originalIndex === 4 && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                bgcolor: "rgba(0, 0, 0, 0.5)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 4,
+                pointerEvents: "none",
+              }}
+            >
+              <Typography sx={{ color: "white", fontSize: "24px", fontWeight: 700 }}>
+                +{visualItems.length - 5}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      );
+    };
+
+    const count = visualItems.length;
+    let visualGrid = null;
+
+    if (count === 1) {
+      const item = visualItems[0];
+      const origIdx = mediaItems.indexOf(item);
+      const isVideo = item.mediaType === "VIDEO";
+      visualGrid = (
+        <Box
+          sx={{
+            width: "100%",
+            maxHeight: "380px",
+            overflow: "hidden",
+            borderRadius: "10px",
+            border: "1px solid #e2e8f0",
+            bgcolor: isVideo ? "#000" : "#f8fafc",
+            cursor: "pointer",
+          }}
+          onClick={() => {
+            setActiveMediaIndex(origIdx >= 0 ? origIdx : 0);
+            setMediaModalOpen(true);
+          }}
+        >
+          <MediaRenderer
+            item={item}
+            alt="post media 1"
+            isVideo={isVideo}
+            isDoc={false}
+            fitMode="contain"
+          />
+        </Box>
+      );
+    } else if (count === 2) {
+      visualGrid = (
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "4px",
+            width: "100%",
+            borderRadius: "10px",
+            overflow: "hidden",
+            border: "1px solid #e2e8f0",
+          }}
+        >
+          {visualItems.map((item) => {
+            const origIdx = mediaItems.indexOf(item);
+            return renderMediaTile(item, origIdx, "220px");
+          })}
+        </Box>
+      );
+    } else if (count === 3) {
+      const topItem = visualItems[0];
+      const origIdx0 = mediaItems.indexOf(topItem);
+      visualGrid = (
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+            width: "100%",
+            borderRadius: "10px",
+            overflow: "hidden",
+            border: "1px solid #e2e8f0",
+          }}
+        >
+          {renderMediaTile(topItem, origIdx0, "200px")}
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
+            {visualItems.slice(1, 3).map((item) => {
+              const origIdx = mediaItems.indexOf(item);
+              return renderMediaTile(item, origIdx, "140px");
+            })}
+          </Box>
+        </Box>
+      );
+    } else if (count === 4) {
+      visualGrid = (
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "4px",
+            width: "100%",
+            borderRadius: "10px",
+            overflow: "hidden",
+            border: "1px solid #e2e8f0",
+          }}
+        >
+          {visualItems.slice(0, 4).map((item) => {
+            const origIdx = mediaItems.indexOf(item);
+            return renderMediaTile(item, origIdx, "150px");
+          })}
+        </Box>
+      );
+    } else if (count >= 5) {
+      visualGrid = (
+        <Box
+          sx={{
+            display: "flex",
+            gap: "4px",
+            width: "100%",
+            borderRadius: "10px",
+            overflow: "hidden",
+            border: "1px solid #e2e8f0",
+          }}
+        >
+          {/* Left column (2 items) */}
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+            {visualItems.slice(0, 2).map((item) => {
+              const origIdx = mediaItems.indexOf(item);
+              return renderMediaTile(item, origIdx, "160px");
+            })}
+          </Box>
+          {/* Right column (3 items) */}
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+            {visualItems.slice(2, 5).map((item, idx) => {
+              const origIdx = idx === 2 ? 4 : mediaItems.indexOf(item);
+              return renderMediaTile(item, origIdx, "105px");
+            })}
+          </Box>
+        </Box>
+      );
+    }
+
+    if (!visualGrid && docItems.length === 0) return null;
+
+    return (
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mb: 1.5 }}>
+        {visualGrid}
+        {docItems.map((item, idx) => (
+          <Box
+            key={item.id ?? `doc-${idx}`}
+            sx={{
+              width: "100%",
+              borderRadius: "8px",
+              overflow: "hidden",
+              border: "1px solid #e2e8f0",
+            }}
+          >
+            <MediaRenderer item={item} isVideo={false} isDoc={true} />
+          </Box>
+        ))}
+      </Box>
+    );
+  };
 
   useEffect(() => {
     if (open && post.id) {
@@ -488,28 +793,7 @@ export default function PostCommentsModal({
           )}
 
           {/* Media Items */}
-          {mediaItems.length > 0 && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mb: 1.5 }}>
-              {mediaItems.map((item, index) => (
-                <Box
-                  key={item.id ?? index}
-                  sx={{
-                    width: "100%",
-                    maxHeight: "360px",
-                    borderRadius: "8px",
-                    overflow: "hidden",
-                    border: "1px solid #f1f5f9",
-                  }}
-                >
-                  <MediaRenderer
-                    item={item}
-                    isVideo={item.mediaType === "VIDEO"}
-                    isDoc={item.mediaType !== "VIDEO" && !isImageUrl(item.mediaUrl)}
-                  />
-                </Box>
-              ))}
-            </Box>
-          )}
+          {renderMediaGrid()}
 
           {/* Shared Post Info */}
           {post.sharedPost && (() => {
@@ -833,6 +1117,18 @@ export default function PostCommentsModal({
         postId={post.id}
         currentUserId={currentUserId}
       />
+
+      {/* Media Fullscreen Lightbox Modal */}
+      {mediaModalOpen && (
+        <PostMediaModal
+          open={mediaModalOpen}
+          onClose={() => setMediaModalOpen(false)}
+          post={post}
+          initialIndex={activeMediaIndex}
+          currentUserId={currentUserId}
+          onPostChanged={onPostChanged}
+        />
+      )}
     </Dialog>
   );
 }

@@ -83,6 +83,15 @@ export async function resetEmailVerification(
   return response;
 }
 
+export async function confirmEmailVerification(
+  token: string,
+): Promise<APIResponseData<any>> {
+  const response = await apiFetch<any>(`/verify-email/confirm?token=${encodeURIComponent(token)}`, {
+    method: "GET",
+  });
+  return response;
+}
+
 export async function resetPassword(
   token: string,
   newPassword: string,

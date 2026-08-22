@@ -198,20 +198,20 @@ export default function DetailedStatsModal({ onClose }: DetailedStatsModalProps)
           </div>
 
 
-          {/* Section 1: Attendance breakdown & Info */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 items-stretch">
-            {/* Pie Chart */}
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm lg:col-span-3 flex flex-col">
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+            {/* Section 1: Attendance breakdown */}
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm lg:col-span-5 flex flex-col justify-between">
               <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
                 <PieIcon className="h-4 w-4 text-emerald-600" />
                 Cơ cấu Trạng thái Tham gia
               </h3>
               {pieData.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center text-xs text-gray-400 py-10">
+                <div className="flex items-center justify-center text-xs text-gray-400 py-10 my-auto">
                   Chưa có dữ liệu buổi học nào hoàn thành
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-6 py-2 my-auto">
                   <div className="h-48 w-48 relative shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -259,73 +259,41 @@ export default function DetailedStatsModal({ onClose }: DetailedStatsModalProps)
               )}
             </div>
 
-            {/* Attendance Guideline Info */}
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm lg:col-span-2 flex flex-col justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-gray-800 mb-3">Đánh giá Chuyên cần</h3>
-                <p className="text-xs text-gray-500 leading-relaxed mb-4">
-                  Tỷ lệ chuyên cần được tính dựa trên số buổi học bạn **Đã tham gia** chia cho tổng số buổi học bạn đã được mời (không tính các buổi đã từ chối).
-                </p>
-                <div className="space-y-3 text-xs text-gray-600">
-                  <div className="flex items-start gap-2">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
-                    <p>
-                      <span className="font-semibold text-gray-700">Chăm chỉ (≥ 80%):</span> Học tập chuyên cần, chuẩn bị bài tốt.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0 mt-1.5" />
-                    <p>
-                      <span className="font-semibold text-gray-700">Trung bình (50% - 79%):</span> Cần hạn chế vắng mặt để nâng cao kết quả học nhóm.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0 mt-1.5" />
-                    <p>
-                      <span className="font-semibold text-gray-700">Báo động (&lt; 50%):</span> Vắng mặt quá nhiều, cần chấn chỉnh lại việc học tập.
-                    </p>
-                  </div>
-                </div>
-
+            {/* Section 2: 30-Day Trend */}
+            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm lg:col-span-7 flex flex-col justify-between">
+              <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-blue-600" />
+                Thời gian học tập 30 ngày qua (Phút)
+              </h3>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={lineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorMinutes" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="dateStr" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                    <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
+                    <RechartsTooltip
+                      formatter={(value, name) => [
+                        name === "Số phút học" ? `${value} phút` : `${value} buổi`,
+                        name,
+                      ]}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="Số phút học"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#colorMinutes)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
-            </div>
-
-          </div>
-
-          {/* Section 2: 30-Day Trend */}
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-blue-600" />
-              Thời gian học tập 30 ngày qua (Phút)
-            </h3>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={lineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorMinutes" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="dateStr" stroke="#94a3b8" fontSize={10} tickLine={false} />
-                  <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
-                  <RechartsTooltip
-                    formatter={(value, name) => [
-                      name === "Số phút học" ? `${value} phút` : `${value} buổi`,
-                      name,
-                    ]}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="Số phút học"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#colorMinutes)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
             </div>
           </div>
 

@@ -24,6 +24,7 @@ import {
   transformFormDataToPayload,
   createSubjectCodeToIdMap,
   setIsOnboardingCompleted,
+  checkStudentCodeAvailability,
 } from "../../services/OnboardingService";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../config/apiClient";
@@ -41,6 +42,8 @@ export default function OnboardingFlow() {
   const [submissionLoading, setSubmissionLoading] = useState<boolean>(false);
   const [submissionError, setSubmissionError] = useState<string>("");
   const [submissionResult, setSubmissionResult] = useState<unknown>(null);
+  const [studentIdError, setStudentIdError] = useState<string>("");
+  const [studentIdChecking, setStudentIdChecking] = useState<boolean>(false);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
   const [cohortsLoading, setCohortsLoading] = useState<boolean>(false);
   const [cohortsError, setCohortsError] = useState<string>("");
@@ -341,10 +344,33 @@ export default function OnboardingFlow() {
     [],
   );
 
+  useEffect(() => {
+    if (!data.studentId || !data.studentId.trim()) {
+      setStudentIdError("");
+      setStudentIdChecking(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setStudentIdChecking(true);
+      const res = await checkStudentCodeAvailability(data.studentId);
+      setStudentIdChecking(false);
+      if (res.exists) {
+        setStudentIdError(res.message || "Mã sinh viên này đã tồn tại trong hệ thống.");
+      } else {
+        setStudentIdError("");
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [data.studentId]);
+
   const canProceed = (): boolean => {
     if (step === 1) {
       return !!(
         data.studentId.trim() &&
+        !studentIdError &&
+        !studentIdChecking &&
         data.cohortCode
       );
     }
@@ -372,7 +398,25 @@ export default function OnboardingFlow() {
 
   const navigate = useNavigate();
 
-  const handleNext = (): void => {
+  const handleNext = async (): Promise<void> => {
+    if (step === 1) {
+      if (studentIdError) return;
+      setStudentIdChecking(true);
+      try {
+        const res = await checkStudentCodeAvailability(data.studentId);
+        setStudentIdChecking(false);
+        if (res.exists) {
+          setStudentIdError(res.message || "Mã sinh viên này đã tồn tại trong hệ thống.");
+          return;
+        }
+        setStudentIdError("");
+        setStep(2);
+      } catch {
+        setStudentIdChecking(false);
+        setStep(2);
+      }
+      return;
+    }
     if (step === 3) {
       if (goalSub === 1) return setGoalSub(2);
       setGoalSub(1);
@@ -493,6 +537,8 @@ export default function OnboardingFlow() {
             cohortsLoading={cohortsLoading}
             cohortsError={cohortsError}
             onRetry={loadCohorts}
+            studentIdError={studentIdError}
+            studentIdChecking={studentIdChecking}
           />
         );
       case 2:

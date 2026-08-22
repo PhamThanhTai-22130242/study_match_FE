@@ -106,7 +106,7 @@ const Footer: React.FC = () => {
       <div className="border-t border-[#111c44] bg-[#070c1e]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
           <p>© {currentYear} StudyMatch. Tất cả các quyền được bảo lưu.</p>
-          <p>Phát triển với ♥ dành riêng cho cộng đồng sinh viên NLU.</p>
+          <p>Phát triển với dành riêng cho cộng đồng sinh viên NLU.</p>
         </div>
       </div>
     </footer>

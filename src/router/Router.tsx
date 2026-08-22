@@ -20,6 +20,7 @@ import CheckEmailPage from "../pages/Auth/ResetPassword/CheckEmailPage";
 import ResetPasswordPage from "../pages/Auth/ResetPassword/ResetPasswordPage";
 import ResetPasswordSuccessPage from "../pages/Auth/ResetPassword/ResetPasswordSuccessPage";
 import CheckVerifyEmailPage from "../pages/Auth/ResetPassword/CheckVerifyPage";
+import VerifyEmailConfirmPage from "../pages/Auth/ResetPassword/VerifyEmailConfirmPage";
 import ProfilePage from "../pages/ProfilePage/ProfilePage";
 import MyProfilePage from "../pages/MyProfile/MyProfilePage";
 import StudyMatchAdminLayout from "../layouts/admin/StudyMatchAdminLayout";
@@ -123,6 +124,10 @@ export const router = createBrowserRouter([
       {
         path: "/verify-email",
         element: <CheckVerifyEmailPage />,
+      },
+      {
+        path: "/verify-email/confirm",
+        element: <VerifyEmailConfirmPage />,
       },
       {
         path: "/activate-admin",

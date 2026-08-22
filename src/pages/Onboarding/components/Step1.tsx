@@ -9,6 +9,8 @@ interface Step1Props {
   cohortsLoading: boolean;
   cohortsError: string;
   onRetry: () => void;
+  studentIdError?: string;
+  studentIdChecking?: boolean;
 }
 
 export function Step1({
@@ -18,6 +20,8 @@ export function Step1({
   cohortsLoading,
   cohortsError,
   onRetry,
+  studentIdError,
+  studentIdChecking,
 }: Step1Props) {
   const sortedCohorts = [...cohorts].sort(
     (a, b) =>
@@ -35,7 +39,19 @@ export function Step1({
           placeholder="2151..."
           type="tel"
           inputMode="numeric"
+          error={!!studentIdError}
         />
+        {studentIdChecking && (
+          <p className="text-xs text-blue-500 font-medium mt-1.5 flex items-center gap-1">
+            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+            Đang kiểm tra mã sinh viên...
+          </p>
+        )}
+        {!studentIdChecking && studentIdError && (
+          <p className="text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1">
+            {studentIdError}
+          </p>
+        )}
       </div>
 
       <div>

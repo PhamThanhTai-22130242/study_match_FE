@@ -227,3 +227,37 @@ export async function setIsOnboardingCompleted(
     throw error;
   }
 }
+
+export async function checkStudentCodeAvailability(
+  studentCode: string,
+): Promise<{ exists: boolean; available: boolean; message: string }> {
+  try {
+    const userId = localStorage.getItem("userId");
+    const res = await apiFetch<any>(
+      `/onboarding/check-student-code?studentCode=${encodeURIComponent(studentCode.trim())}`,
+      {
+        method: "GET",
+        headers: {
+          ...(userId && { "X-User-Id": userId }),
+        },
+      },
+      API_BASE_URL2,
+    );
+
+    const responseData = res?.data ?? (res as any);
+    if (responseData && typeof responseData === "object" && "exists" in responseData) {
+      return {
+        exists: Boolean(responseData.exists),
+        available: responseData.available ?? !responseData.exists,
+        message: responseData.message || res?.message || "",
+      };
+    }
+
+    return { exists: false, available: true, message: "" };
+  } catch (err) {
+    console.error("Check student code error:", err);
+    return { exists: false, available: true, message: "" };
+  }
+}
+
+

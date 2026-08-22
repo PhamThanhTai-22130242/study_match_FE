@@ -9,7 +9,6 @@ import {
   UserPlus,
   Users,
   MapPin,
-  BookOpen,
 } from "lucide-react";
 import { getGroupAvatarUrl } from "../../../services/GroupService";
 import {
@@ -259,12 +258,6 @@ export default function RecommendationCard({
         <div className="flex items-center gap-1 text-gray-500 font-medium">
           <MapPin size={12} className="text-blue-500" />
           <span>{recommendation.region || "Chưa cập nhật"}</span>
-        </div>
-
-        <span className="font-bold text-gray-700">Môn chung học kỳ</span>
-        <div className="flex items-center gap-1 text-gray-500 font-medium">
-          <BookOpen size={12} className="text-blue-500" />
-          <span>{recommendation.sharedSubjectCount || 0} môn học chung</span>
         </div>
 
         <span className="font-bold text-gray-700">Nhóm học chung ({recommendation.commonGroups?.length || 0})</span>

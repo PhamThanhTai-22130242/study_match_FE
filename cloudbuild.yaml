@@ -53,7 +53,7 @@ substitutions:
   _TAG: latest
   _API_BASE_URL: https://api-gateway-36417266010.asia-southeast1.run.app
   _SOCKET_URL: wss://api-gateway-36417266010.asia-southeast1.run.app/ws
-  _REACT_APP_ZEGO_APP_ID: '1620816700'
+  _REACT_APP_ZEGO_APP_ID: '338381907'
 
 options:
   logging: CLOUD_LOGGING_ONLY
