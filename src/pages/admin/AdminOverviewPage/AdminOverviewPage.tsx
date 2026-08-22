@@ -54,7 +54,7 @@ const CHART_COLORS = {
 };
 
 export default function AdminOverviewPage() {
-  
+
   const [timePreset, setTimePreset] = useState<"THIS_WEEK" | "THIS_MONTH" | "ALL_TIME" | "CUSTOM">("THIS_WEEK");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -193,12 +193,43 @@ export default function AdminOverviewPage() {
   const [reportTargetFilter, setReportTargetFilter] = useState<string>("ALL");
   const [reportSortBy, setReportSortBy] = useState<"TOTAL_DESC" | "PENDING_DESC" | "NAME_ASC">("TOTAL_DESC");
 
+  const TARGET_NAME_MAP: Record<string, string> = {
+    USER: "Người dùng",
+    User: "Người dùng",
+    "Người dùng": "Người dùng",
+    GROUP: "Nhóm",
+    Group: "Nhóm",
+    "Nhóm": "Nhóm",
+    "Nhóm học tập": "Nhóm",
+    POST: "Bài viết",
+    Post: "Bài viết",
+    "Bài viết": "Bài viết",
+    DOCUMENT: "Tài liệu",
+    Document: "Tài liệu",
+    "Tài liệu": "Tài liệu",
+  };
+
+  const STATUS_NAME_MAP: Record<string, string> = {
+    "Đang chờ (PENDING)": "Đang chờ",
+    PENDING: "Đang chờ",
+    "Đang xem xét (REVIEWING)": "Đang xem xét",
+    REVIEWING: "Đang xem xét",
+    "Đã xử lý (RESOLVED)": "Đã xử lý",
+    RESOLVED: "Đã xử lý",
+    "Từ chối (REJECTED)": "Từ chối",
+    REJECTED: "Từ chối",
+  };
+
   const processedReportsData = useMemo(() => {
     if (!apiData?.reportsByTarget) return [];
-    let list = [...apiData.reportsByTarget];
+    let list = apiData.reportsByTarget.map((item) => ({
+      ...item,
+      name: TARGET_NAME_MAP[item.name] || item.name,
+    }));
 
     if (reportTargetFilter !== "ALL") {
-      list = list.filter((item) => item.name.includes(reportTargetFilter));
+      const filterLabel = TARGET_NAME_MAP[reportTargetFilter] || reportTargetFilter;
+      list = list.filter((item) => item.name === filterLabel);
     }
 
     list.sort((a, b) => {
@@ -212,7 +243,11 @@ export default function AdminOverviewPage() {
   }, [apiData, reportTargetFilter, reportSortBy]);
 
   const reportsPieData = useMemo(() => {
-    return apiData?.reportsPie || [];
+    if (!apiData?.reportsPie) return [];
+    return apiData.reportsPie.map((item) => ({
+      ...item,
+      name: STATUS_NAME_MAP[item.name] || item.name.replace(/\s*\([A-Z]+\)/g, ""),
+    }));
   }, [apiData]);
 
   const [messageSortBy, setMessageSortBy] = useState<"CHRONO" | "TOTAL_DESC" | "TOTAL_ASC">("CHRONO");
@@ -267,7 +302,7 @@ export default function AdminOverviewPage() {
 
   return (
     <div className="space-y-6 pb-12 text-slate-800">
-      
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">
@@ -383,7 +418,7 @@ export default function AdminOverviewPage() {
 
       {loading && !apiData ? (
         <div className="space-y-6">
-          
+
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((idx) => (
               <div key={idx} className="h-28 rounded-xl border border-slate-200 bg-slate-100 animate-pulse p-5 space-y-3">
@@ -404,9 +439,9 @@ export default function AdminOverviewPage() {
         </div>
       ) : (
         <>
-          
+
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            
+
             <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Tổng số người dùng
@@ -439,12 +474,12 @@ export default function AdminOverviewPage() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            
+
             <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-bold text-slate-900">
-                    Top Môn Học (Public & Private)
+                    Top Môn Học
                   </h2>
 
                 </div>
@@ -469,9 +504,9 @@ export default function AdminOverviewPage() {
                   onChange={(e) => setSubjectVisibilityFilter(e.target.value as any)}
                   className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 focus:border-slate-400 focus:outline-none"
                 >
-                  <option value="ALL">Tất cả (Public + Private)</option>
-                  <option value="PUBLIC_ONLY">Chỉ Nhóm Public</option>
-                  <option value="PRIVATE_ONLY">Chỉ Nhóm Private</option>
+                  <option value="ALL">Tất cả</option>
+                  <option value="PUBLIC_ONLY">Nhóm Công khai</option>
+                  <option value="PRIVATE_ONLY">Nhóm Riêng tư</option>
                 </select>
 
                 <select
@@ -525,21 +560,21 @@ export default function AdminOverviewPage() {
                               <div
                                 className="bg-blue-500 h-full transition-all duration-300"
                                 style={{ width: `${(item.publicCount / maxGroups) * 100}%` }}
-                                title={`Public: ${item.publicCount} nhóm`}
+                                title={`Công khai: ${item.publicCount} nhóm`}
                               />
                             )}
                             {subjectVisibilityFilter !== "PUBLIC_ONLY" && (
                               <div
                                 className="bg-slate-600 h-full transition-all duration-300"
                                 style={{ width: `${(item.privateCount / maxGroups) * 100}%` }}
-                                title={`Private: ${item.privateCount} nhóm`}
+                                title={`Riêng tư: ${item.privateCount} nhóm`}
                               />
                             )}
                           </div>
 
                           <div className="flex items-center justify-between text-[10px] text-slate-500">
-                            <span>Public: <strong className="text-slate-800">{item.publicCount}</strong> ({publicPct}%)</span>
-                            <span>Private: <strong className="text-slate-800">{item.privateCount}</strong> ({privatePct}%)</span>
+                            <span>Công khai: <strong className="text-slate-800">{item.publicCount}</strong> ({publicPct}%)</span>
+                            <span>Riêng tư: <strong className="text-slate-800">{item.privateCount}</strong> ({privatePct}%)</span>
                           </div>
                         </div>
                       </div>
@@ -566,9 +601,10 @@ export default function AdminOverviewPage() {
                   className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 focus:border-slate-400 focus:outline-none"
                 >
                   <option value="ALL">Tất cả đối tượng</option>
-                  <option value="User">User</option>
-                  <option value="Group">Group</option>
-                  <option value="Post">Post</option>
+                  <option value="USER">Người dùng</option>
+                  <option value="POST">Bài viết</option>
+                  <option value="GROUP">Nhóm</option>
+                  <option value="DOCUMENT">Tài liệu</option>
                 </select>
 
                 <select
@@ -640,9 +676,12 @@ export default function AdminOverviewPage() {
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                           <XAxis dataKey="name" style={{ fontSize: "10px" }} tickLine={false} />
                           <YAxis style={{ fontSize: "10px" }} tickLine={false} axisLine={false} />
-                          <Tooltip contentStyle={{ backgroundColor: "#ffffff", borderRadius: "8px", borderColor: "#e2e8f0" }} />
+                          <Tooltip
+                            formatter={(val: any, name: any) => [`${val} báo cáo`, name]}
+                            contentStyle={{ backgroundColor: "#ffffff", borderRadius: "8px", borderColor: "#e2e8f0" }}
+                          />
                           <Bar dataKey="pending" name="Đang chờ" stackId="a" fill="#d97706" />
-                          <Bar dataKey="reviewing" name="Xem xét" stackId="a" fill="#2563eb" />
+                          <Bar dataKey="reviewing" name="Đang xem xét" stackId="a" fill="#2563eb" />
                           <Bar dataKey="resolved" name="Đã xử lý" stackId="a" fill="#059669" />
                           <Bar dataKey="rejected" name="Từ chối" stackId="a" fill="#dc2626" />
                         </BarChart>

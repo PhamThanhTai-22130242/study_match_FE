@@ -14,6 +14,7 @@ export interface Subject {
 }
 
 export interface StudyPlan {
+  termId?: number | string;
   curriculumName: string;
   termFullName?: string;
   semesterNo?: number;

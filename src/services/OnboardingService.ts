@@ -142,9 +142,7 @@ export function transformFormDataToPayload(
     ageGroup: formData.ageGroup,
     region: formData.region,
     cohortId,
-    termId: studyPlan?.termFullName
-      ? parseInt(studyPlan.termFullName.match(/\d+/)?.[0] || "0")
-      : undefined,
+    termId: studyPlan?.termId,
     studyYearNo: studyPlan?.studyYearNo,
     semesterNo: studyPlan?.semesterNo,
     avgScore: formData.avgScore,
