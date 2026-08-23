@@ -127,3 +127,19 @@ export interface StepMeta {
   label: string;
   icon: LucideIcon;
 }
+
+export interface ModuleSlotConflict {
+  dayId: DayId;
+  slotId: SlotId;
+  dayLabel: string;
+  slotLabel: string;
+  moduleCodes: string[];
+}
+
+export interface FreeTimeConflict {
+  dayId: DayId;
+  slotId: SlotId;
+  dayLabel: string;
+  slotLabel: string;
+  moduleCodes: string[];
+}

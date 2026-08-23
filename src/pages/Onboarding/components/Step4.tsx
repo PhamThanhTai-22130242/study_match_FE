@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import {
   FormData,
   StudyPlan,
@@ -17,6 +18,7 @@ import {
   getSortedSubjects,
   getStudyPlanTitle,
   normalizeModuleSchedule,
+  getModuleConflictList,
 } from "./constants";
 
 interface Step4Props {
@@ -86,6 +88,39 @@ export function Step4CurrentPlan({
   const selectedModules = [data.mainModule, ...data.enrolledModules].filter(
     Boolean,
   );
+  const moduleConflicts = useMemo(
+    () => getModuleConflictList(data.moduleSlots, selectedModules),
+    [data.moduleSlots, selectedModules],
+  );
+  const hasModuleConflicts = moduleConflicts.length > 0;
+
+  const otherModulesAtSlot = useMemo(() => {
+    if (!editingModuleCode) return {};
+    const map: Record<string, string[]> = {};
+    selectedModules
+      .filter((code) => code !== editingModuleCode)
+      .forEach((code) => {
+        const sched = data.moduleSlots[code];
+        if (!sched) return;
+        DAYS.forEach((day) => {
+          SLOTS.forEach((slot) => {
+            if (sched[day.id]?.[slot.id]) {
+              const key = `${day.id}-${slot.id}`;
+              map[key] = map[key] ? [...map[key], code] : [code];
+            }
+          });
+        });
+      });
+    return map;
+  }, [editingModuleCode, selectedModules, data.moduleSlots]);
+
+  const currentModuleConflicts = useMemo(() => {
+    if (!editingModuleCode) return [];
+    return moduleConflicts.filter((c) =>
+      c.moduleCodes.includes(editingModuleCode),
+    );
+  }, [editingModuleCode, moduleConflicts]);
+
   const hasMissingModuleSlots = selectedModules.some((code) => {
     const schedule = data.moduleSlots[code];
     return (
@@ -565,26 +600,43 @@ export function Step4CurrentPlan({
                   );
                   const selectedCount = getModuleSelectedCount(moduleCode);
                   const daySummaries = getModuleDaySummary(moduleCode);
+                  const moduleHasConflict = moduleConflicts.some((c) =>
+                    c.moduleCodes.includes(moduleCode),
+                  );
 
                   return (
                     <div
                       key={moduleCode}
-                      className="bg-white rounded-xl border border-blue-100 p-3"
+                      className={`bg-white rounded-xl border p-3 transition-all ${
+                        moduleHasConflict
+                          ? "border-red-200 ring-1 ring-red-100"
+                          : "border-blue-100"
+                      }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span
-                              className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${moduleCode === data.mainModule
+                              className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                                moduleCode === data.mainModule
                                   ? "bg-blue-600 text-white"
                                   : "bg-emerald-100 text-emerald-700"
-                                }`}
+                              }`}
                             >
-                              {moduleCode === data.mainModule ? "Môn muốn học" : "Môn trong kỳ"} · {moduleCode}
+                              {moduleCode === data.mainModule
+                                ? "Môn muốn học"
+                                : "Môn trong kỳ"}{" "}
+                              · {moduleCode}
                             </span>
                             <span className="text-xs text-gray-700 truncate">
                               {moduleInfo?.subjectName || "Môn đã chọn"}
                             </span>
+                            {moduleHasConflict && (
+                              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-red-100 text-red-700 border border-red-200 flex items-center gap-1">
+                                <AlertTriangle size={12} />
+                                Trùng ca học
+                              </span>
+                            )}
                           </div>
                           <p className="text-[11px] text-gray-400 mt-1">
                             {selectedCount > 0
@@ -600,7 +652,11 @@ export function Step4CurrentPlan({
                         <button
                           type="button"
                           onClick={() => setEditingModuleCode(moduleCode)}
-                          className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100"
+                          className={`shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
+                            moduleHasConflict
+                              ? "border-red-300 text-red-700 bg-red-50 hover:bg-red-100"
+                              : "border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100"
+                          }`}
                         >
                           {selectedCount > 0
                             ? "Sửa thời gian môn học"
@@ -611,6 +667,31 @@ export function Step4CurrentPlan({
                   );
                 })}
               </div>
+
+              {hasModuleConflicts && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-700 space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-red-800">
+                    <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                    <span>Phát hiện trùng ca học giữa các môn:</span>
+                  </div>
+                  <ul className="space-y-1 pl-6 list-disc">
+                    {moduleConflicts.map((c) => (
+                      <li key={`conflict-${c.dayId}-${c.slotId}`}>
+                        <span className="font-semibold">
+                          {c.dayLabel} ({c.slotLabel})
+                        </span>
+                        : Trùng ca giữa môn{" "}
+                        <span className="font-bold text-red-800">
+                          {c.moduleCodes.join(", ")}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-[11px] text-red-600 font-medium">
+                    Vui lòng điều chỉnh lại thời gian để không có 2 môn học trùng cùng một ca trước khi tiếp tục.
+                  </p>
+                </div>
+              )}
 
               {hasMissingModuleSlots && (
                 <p className="text-xs text-red-500">
@@ -649,6 +730,30 @@ export function Step4CurrentPlan({
                     Đóng
                   </button>
                 </div>
+
+                {currentModuleConflicts.length > 0 && (
+                  <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 space-y-1">
+                    <div className="flex items-center gap-2 font-bold text-red-800">
+                      <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                      <span>Môn này đang có ca học bị trùng với môn khác:</span>
+                    </div>
+                    <ul className="list-disc pl-5 space-y-0.5">
+                      {currentModuleConflicts.map((c) => (
+                        <li key={`modal-conflict-${c.dayId}-${c.slotId}`}>
+                          <span className="font-semibold">
+                            {c.dayLabel} ({c.slotLabel})
+                          </span>
+                          : Trùng với môn{" "}
+                          <span className="font-bold">
+                            {c.moduleCodes
+                              .filter((code) => code !== editingModuleCode)
+                              .join(", ")}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 <div className="overflow-x-auto -mx-1">
                   <table className="w-full min-w-[640px]">
@@ -706,6 +811,15 @@ export function Step4CurrentPlan({
                             </td>
                             {SLOTS.map((slot: SlotConfig) => {
                               const active = daySlots[slot.id];
+                              const slotKey = `${day.id}-${slot.id}`;
+                              const otherCodes = otherModulesAtSlot[slotKey];
+                              const isConflicting =
+                                active &&
+                                Boolean(otherCodes && otherCodes.length > 0);
+                              const otherOccupied =
+                                !active &&
+                                Boolean(otherCodes && otherCodes.length > 0);
+
                               return (
                                 <td
                                   key={`modal-${editingModuleCode}-${day.id}-${slot.id}`}
@@ -720,9 +834,30 @@ export function Step4CurrentPlan({
                                         slot.id,
                                       )
                                     }
-className={`w-full rounded-lg border-2 text-xs font-semibold py-2 transition-all bg-white ${active ? "border-accent text-accent" : "border-gray-200 text-gray-400 hover:border-accent/40"}`}
+                                    title={
+                                      isConflicting
+                                        ? `Trùng ca với môn ${otherCodes.join(", ")}`
+                                        : otherOccupied
+                                          ? `Đang chọn ở môn ${otherCodes.join(", ")}`
+                                          : undefined
+                                    }
+                                    className={`w-full rounded-lg border-2 text-xs font-semibold py-2 transition-all ${
+                                      isConflicting
+                                        ? "border-red-500 bg-red-50 text-red-600 font-bold hover:bg-red-100 ring-2 ring-red-200"
+                                        : active
+                                          ? "border-accent text-accent bg-white"
+                                          : otherOccupied
+                                            ? "border-dashed border-amber-300 bg-amber-50/50 text-amber-700 hover:border-amber-400"
+                                            : "border-gray-200 text-gray-400 hover:border-accent/40 bg-white"
+                                    }`}
                                   >
-                                    {active ? "✓" : "—"}
+                                    {isConflicting
+                                      ? "✕ Trùng"
+                                      : active
+                                        ? "✓"
+                                        : otherOccupied
+                                          ? `[${otherCodes[0]}]`
+                                          : "—"}
                                   </button>
                                 </td>
                               );

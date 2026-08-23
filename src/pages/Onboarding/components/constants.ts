@@ -30,6 +30,8 @@ import {
   StudyMode,
   Subject,
   StudyPlan,
+  ModuleSlotConflict,
+  FreeTimeConflict,
 } from "./types";
 
 export const LEARNING_LEVELS: GoalConfig[] = [
@@ -211,4 +213,87 @@ export function getStudyPlanTitle(plan: StudyPlan): string {
     plan.termFullName ||
     `Học kỳ ${plan.semesterNo} - Năm học ${plan.academicYearStart} - ${plan.academicYearEnd}`
   );
+}
+
+export function getModuleConflictList(
+  moduleSlots: Record<string, FreeTime> = {},
+  selectedModuleCodes: string[] = [],
+): ModuleSlotConflict[] {
+  const conflicts: ModuleSlotConflict[] = [];
+  const validCodes = selectedModuleCodes.filter(Boolean);
+
+  DAYS.forEach((day) => {
+    SLOTS.forEach((slot) => {
+      const activeModules = validCodes.filter((code) => {
+        return Boolean(moduleSlots[code]?.[day.id]?.[slot.id]);
+      });
+
+      if (activeModules.length > 1) {
+        conflicts.push({
+          dayId: day.id,
+          slotId: slot.id,
+          dayLabel: day.label,
+          slotLabel: slot.label,
+          moduleCodes: activeModules,
+        });
+      }
+    });
+  });
+
+  return conflicts;
+}
+
+export function getOccupiedStudySlots(
+  moduleSlots: Record<string, FreeTime> = {},
+  selectedModuleCodes: string[] = [],
+): Record<string, string[]> {
+  const occupied: Record<string, string[]> = {};
+  const validCodes = selectedModuleCodes.filter(Boolean);
+
+  DAYS.forEach((day) => {
+    SLOTS.forEach((slot) => {
+      const key = `${day.id}-${slot.id}`;
+      const activeModules = validCodes.filter((code) => {
+        return Boolean(moduleSlots[code]?.[day.id]?.[slot.id]);
+      });
+      if (activeModules.length > 0) {
+        occupied[key] = activeModules;
+      }
+    });
+  });
+
+  return occupied;
+}
+
+export function getFreeTimeConflictList(
+  moduleSlots: Record<string, FreeTime> = {},
+  selectedModuleCodes: string[] = [],
+  freeTime?: FreeTime,
+): FreeTimeConflict[] {
+  if (!freeTime) return [];
+  const conflicts: FreeTimeConflict[] = [];
+  const validCodes = selectedModuleCodes.filter(Boolean);
+
+  DAYS.forEach((day) => {
+    SLOTS.forEach((slot) => {
+      const isFree = Boolean(freeTime[day.id]?.[slot.id]);
+      if (!isFree) return;
+
+      const activeModules = validCodes.filter((code) => {
+        return Boolean(moduleSlots[code]?.[day.id]?.[slot.id]);
+      });
+
+      if (activeModules.length > 0) {
+        conflicts.push({
+          dayId: day.id,
+          slotId: slot.id,
+          dayLabel: day.label,
+          slotLabel: slot.label,
+          moduleCodes: activeModules,
+        });
+      }
+    });
+  });
+
+  return conflicts;
 }

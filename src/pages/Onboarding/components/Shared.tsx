@@ -20,6 +20,9 @@ interface TInputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   type?: string;
+  min?: number | string;
+  max?: number | string;
+  step?: number | string;
   inputMode?:
     | "none"
     | "text"
@@ -38,6 +41,9 @@ export function TInput({
   onChange,
   placeholder,
   type = "text",
+  min,
+  max,
+  step,
   inputMode,
   pattern,
   error = false,
@@ -48,6 +54,9 @@ export function TInput({
       type={type}
       value={value}
       placeholder={placeholder}
+      min={min}
+      max={max}
+      step={step}
       inputMode={inputMode}
       pattern={pattern}
       onChange={(e) => onChange(e.target.value)}

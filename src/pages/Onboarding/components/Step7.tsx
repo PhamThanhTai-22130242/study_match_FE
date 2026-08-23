@@ -58,7 +58,10 @@ export function Step7({ data, studyPlan }: Step7Props) {
         : "—",
     ],
     ["Điểm TB", `${data.avgScore}/10`],
-    ["Lần học lại", `${data.prevAttempts} lần`],
+    [
+      "Tín chỉ tích lũy",
+      data.studiedCredits ? `${data.studiedCredits} tín chỉ` : "—",
+    ],
   ];
 
   return (

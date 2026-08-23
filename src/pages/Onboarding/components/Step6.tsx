@@ -16,6 +16,11 @@ function getScoreLabel(score: number): string {
 
 export function Step6({ data, update }: Step6Props) {
   const score = data.avgScore;
+  const rawCredits = String(data.studiedCredits || "").trim();
+  const creditsNum = Number(rawCredits);
+  const isInvalidCredits =
+    rawCredits !== "" &&
+    (!Number.isInteger(creditsNum) || creditsNum < 1 || creditsNum > 200);
 
   return (
     <div className="space-y-6">
@@ -45,13 +50,25 @@ export function Step6({ data, update }: Step6Props) {
       </div>
 
       <div>
-        <FieldLabel>Số tín chỉ đã tích lũy</FieldLabel>
+        <FieldLabel>Số tín chỉ đã tích lũy (1 – 200)</FieldLabel>
         <TInput
           value={data.studiedCredits}
           onChange={(v) => update("studiedCredits", v)}
-          placeholder="Ví dụ: 60"
+          placeholder="Ví dụ: 60 (từ 1 đến 200)"
           type="number"
+          min={1}
+          max={200}
+          error={isInvalidCredits}
         />
+        {isInvalidCredits ? (
+          <p className="text-xs text-red-500 mt-1.5 font-medium">
+            Số tín chỉ tích lũy phải là số nguyên nằm trong khoảng từ 1 đến 200.
+          </p>
+        ) : (
+          <p className="text-xs text-gray-400 mt-1.5">
+            Nhập tổng số tín chỉ bạn đã hoàn thành (giá trị từ 1 đến 200).
+          </p>
+        )}
       </div>
     </div>
   );

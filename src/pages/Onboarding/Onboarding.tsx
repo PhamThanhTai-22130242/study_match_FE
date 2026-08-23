@@ -10,6 +10,8 @@ import {
   STEPS_META,
   initFreeTime,
   syncModuleSlots,
+  getModuleConflictList,
+  getFreeTimeConflictList,
   Step1,
   Step2,
   Step3Goal,
@@ -381,18 +383,49 @@ export default function OnboardingFlow() {
       const selectedModules = [data.mainModule, ...data.enrolledModules].filter(
         Boolean,
       );
-      return selectedModules.every((moduleCode) =>
+      const allModulesHaveSlots = selectedModules.every((moduleCode) =>
         DAYS.some((day) =>
           Object.values(data.moduleSlots[moduleCode]?.[day.id] ?? {}).some(
             Boolean,
           ),
         ),
       );
+      if (!allModulesHaveSlots) return false;
+
+      const moduleConflicts = getModuleConflictList(
+        data.moduleSlots,
+        selectedModules,
+      );
+      if (moduleConflicts.length > 0) return false;
+
+      return true;
     }
     if (step === 5) {
-      return DAYS.some((d) => Object.values(data.freeTime[d.id]).some(Boolean));
+      const hasFreeTime = DAYS.some((d) =>
+        Object.values(data.freeTime[d.id]).some(Boolean),
+      );
+      if (!hasFreeTime) return false;
+
+      const selectedModules = [data.mainModule, ...data.enrolledModules].filter(
+        Boolean,
+      );
+      const freeTimeConflicts = getFreeTimeConflictList(
+        data.moduleSlots,
+        selectedModules,
+        data.freeTime,
+      );
+      if (freeTimeConflicts.length > 0) return false;
+
+      return true;
     }
-    if (step === 6) return data.studiedCredits !== "";
+    if (step === 6) {
+      const rawCredits = String(data.studiedCredits || "").trim();
+      if (rawCredits === "") return false;
+      const creditsNum = Number(rawCredits);
+      return (
+        Number.isInteger(creditsNum) && creditsNum >= 1 && creditsNum <= 200
+      );
+    }
     return true;
   };
 
