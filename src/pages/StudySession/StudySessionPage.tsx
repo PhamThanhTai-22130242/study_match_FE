@@ -633,12 +633,21 @@ export default function StudySessionPage() {
           applySessionUpdate(prev, updatedSession, filter),
         );
 
-        if (eligibility?.sessionEnded) {
+        const isEligibleForFullFeedback =
+          eligibility?.sessionEnded &&
+          eligibility?.feedbackType === "SESSION_FEEDBACK" &&
+          eligibility?.canSubmitFeedback;
+
+        if (isEligibleForFullFeedback) {
           setSelectedSession(null);
         } else {
           setSelectedSession(updatedSession);
         }
-      } else if (eligibility?.sessionEnded) {
+      } else if (
+        eligibility?.sessionEnded &&
+        eligibility?.feedbackType === "SESSION_FEEDBACK" &&
+        eligibility?.canSubmitFeedback
+      ) {
         setSelectedSession(null);
       }
     } catch {
@@ -725,12 +734,14 @@ export default function StudySessionPage() {
         onJoinSession={handleJoinSession}
       />
 
-      {feedbackEligibility?.sessionEnded && (
-        <FeedbackSubmitPanel
-          eligibility={feedbackEligibility}
-          onClose={() => setFeedbackEligibility(null)}
-        />
-      )}
+      {feedbackEligibility?.sessionEnded &&
+        feedbackEligibility?.feedbackType === "SESSION_FEEDBACK" &&
+        feedbackEligibility?.canSubmitFeedback && (
+          <FeedbackSubmitPanel
+            eligibility={feedbackEligibility}
+            onClose={() => setFeedbackEligibility(null)}
+          />
+        )}
 
       {joinedRoom && (
         <StudySessionRoom

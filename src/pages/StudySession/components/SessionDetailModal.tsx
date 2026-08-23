@@ -413,26 +413,18 @@ export function SessionDetailModal({
   const canEvaluate =
     isEnded &&
     !isCancelled &&
-    (
-      feedbackEligibility?.canSubmitFeedback ||
-      Boolean(feedbackEligibility?.feedbackType) ||
-      ["ACCEPTED", "JOINED", "COMPLETED", "PARTIAL"].includes(currentSession?.participantStatus || "")
+    !userFeedback &&
+    Boolean(
+      feedbackEligibility?.canSubmitFeedback &&
+      feedbackEligibility?.feedbackType === "SESSION_FEEDBACK" &&
+      feedbackEligibility?.attendanceStatus !== "ABSENT" &&
+      feedbackEligibility?.attendanceStatus !== "NOT_JOINED"
     );
 
-  const activeEligibility: FeedbackEligibilityResponse = feedbackEligibility || {
-    sessionId: session?.id || 0,
-    userId: userId || 0,
-    targetUserId: null,
-    groupId: session?.groupId ?? null,
-    sessionType: (currentSession?.sessionType || session?.sessionType || "USER_PAIR") as any,
-    sessionEnded: true,
-    attendanceStatus: "COMPLETED",
-    totalDurationSeconds: 3600,
-    minRequiredDurationSeconds: 1800,
-    canSubmitFeedback: true,
-    feedbackType: "SESSION_FEEDBACK",
-    eligibleForModel: true,
-  };
+  const showFeedbackSection =
+    (isEnded || isCompleted) &&
+    !isCancelled &&
+    (Boolean(userFeedback) || canEvaluate);
 
   const showFooter =
     (currentSession?.participantStatus === "PENDING" && !isCancelled) ||
@@ -883,8 +875,8 @@ export function SessionDetailModal({
                 </div>
               )}
 
-              {/* Đánh giá buổi học (Khi buổi học đã kết thúc) */}
-              {(isEnded || isCompleted) && !isCancelled && (
+              {/* Đánh giá buổi học (Chỉ hiển thị khi đã có đánh giá hoặc user đã tham gia và đủ điều kiện đánh giá) */}
+              {showFeedbackSection && (
                 <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
@@ -903,7 +895,7 @@ export function SessionDetailModal({
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                         Đã đánh giá
                       </span>
-                    ) : canEvaluate ? (
+                    ) : (
                       <button
                         type="button"
                         onClick={() => setShowFeedbackModal(true)}
@@ -911,10 +903,6 @@ export function SessionDetailModal({
                       >
                         Đánh giá buổi học
                       </button>
-                    ) : (
-                      <span className="text-xs text-gray-400">
-                        Chưa có đánh giá
-                      </span>
                     )}
                   </div>
 
@@ -1033,9 +1021,9 @@ export function SessionDetailModal({
         )}
       </div>
 
-      {showFeedbackModal && (
+      {showFeedbackModal && feedbackEligibility && (
         <FeedbackSubmitSheet
-          eligibility={activeEligibility}
+          eligibility={feedbackEligibility}
           onClose={() => setShowFeedbackModal(false)}
           onSuccess={(newFeedback) => {
             setUserFeedback(newFeedback);
